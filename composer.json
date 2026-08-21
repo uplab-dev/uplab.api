@@ -1,0 +1,56 @@
+{
+  "name": "uplabteam/uplab.api",
+  "description": "HTTP API для «1С-Битрикс: Управление сайтом» — отдаёт инфоблоки, highload-блоки, веб-формы, меню, поиск и карту сайта headless-фронтенду с учётом прав и кеша",
+  "homepage": "https://github.com/uplab-dev/uplab.api",
+  "type": "bitrix-module",
+  "keywords": [
+    "bitrix",
+    "bitrix-module",
+    "1c-bitrix",
+    "php",
+    "api",
+    "http-api",
+    "headless",
+    "json",
+    "nuxt",
+    "uplab"
+  ],
+  "authors": [
+    {
+      "name": "ООО «Аплэб» (Uplab LLC)",
+      "role": "Правообладатель",
+      "homepage": "https://www.uplab.ru"
+    }
+  ],
+  "license": "proprietary",
+  "support": {
+    "issues": "https://github.com/uplab-dev/uplab.api/issues",
+    "source": "https://github.com/uplab-dev/uplab.api",
+    "docs": "https://github.com/uplab-dev/uplab.api#readme"
+  },
+  "require": {
+    "php": ">=8.1",
+    "ext-json": "*",
+    "ext-mbstring": "*",
+    "composer/installers": "^1.0 || ^2.0"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^10.5"
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Uplab\\Api\\": "lib/",
+      "Uplab\\Api\\Tests\\": "tests/"
+    }
+  },
+  "scripts": {
+    "test": "phpunit",
+    "test:coverage": "phpunit --coverage-text"
+  },
+  "config": {
+    "sort-packages": true,
+    "allow-plugins": {
+      "composer/installers": true
+    }
+  }
+}

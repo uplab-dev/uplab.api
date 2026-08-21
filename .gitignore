@@ -1,0 +1,16 @@
+.git
+.DS_Store
+/.idea
+/.claude
+
+/bitrix
+/vendor
+
+# Юнит-тесты (dev): локальный конфиг и кеш PHPUnit
+/phpunit.xml
+/.phpunit.cache
+/.phpunit.result.cache
+
+# Модуль не имеет prod-зависимостей, lock фиксировал бы только dev-инструменты:
+# потребителям он бесполезен (composer читает lock корневого проекта, не пакета)
+/composer.lock

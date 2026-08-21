@@ -1,0 +1,742 @@
+{
+  "info": {
+    "_postman_id": "9f3c2a10-1b2c-4d5e-8a90-uplabapi18000",
+    "name": "uplab.api — REST API tests",
+    "description": "Тестовая коллекция всех эндпоинтов модуля uplab.api.\n\nИмпортируется в Postman и в Insomnia (Insomnia: Import → выбрать этот файл — понимает формат Postman v2.1).\n\nПеред запуском заполните переменные коллекции (вкладка Variables): baseUrl, siteId и коды сущностей вашего проекта. Для мутирующих content-эндпоинтов нужен bitrixSessid.\n\nБазовые проверки (нет 5xx/фатала, тело — валидный JSON, нет утечки PHP-ошибки) выполняются для КАЖДОГО запроса на уровне коллекции. Отдельные проверки статуса/поведения — в конкретных запросах.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "https://example.ru", "type": "string" },
+    { "key": "siteId", "value": "ru", "type": "string" },
+    { "key": "iblockCode", "value": "catalog", "type": "string" },
+    { "key": "elementCode", "value": "example-element", "type": "string" },
+    { "key": "elementId", "value": "1", "type": "string" },
+    { "key": "sectionCode", "value": "example-section", "type": "string" },
+    { "key": "sectionId", "value": "1", "type": "string" },
+    { "key": "hlblockCode", "value": "SomeHlblock", "type": "string" },
+    { "key": "pageCode", "value": "about", "type": "string" },
+    { "key": "formCode", "value": "FEEDBACK", "type": "string" },
+    { "key": "contentPageCode", "value": "main", "type": "string" },
+    { "key": "contentElementId", "value": "1", "type": "string" },
+    { "key": "menuCode", "value": "top", "type": "string" },
+    { "key": "searchQuery", "value": "test", "type": "string" },
+    { "key": "bitrixSessid", "value": "", "type": "string" }
+  ],
+  "event": [
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Базовые проверки для каждого запроса коллекции.",
+          "pm.test('Нет ответа 5xx (нет фатальной ошибки)', function () {",
+          "    pm.expect(pm.response.code, 'HTTP-код').to.be.below(500);",
+          "});",
+          "",
+          "pm.test('Тело — валидный JSON (или пустое)', function () {",
+          "    var t = pm.response.text();",
+          "    if (t && t.trim().length) {",
+          "        var ok = true;",
+          "        try { pm.response.json(); } catch (e) { ok = false; }",
+          "        pm.expect(ok, 'ответ не является JSON: ' + t.slice(0, 300)).to.be.true;",
+          "    }",
+          "});",
+          "",
+          "pm.test('Нет утечки PHP-ошибки/исключения в теле', function () {",
+          "    // Bitrix ловит необработанные исключения и отдаёт их как {status:error} с HTTP 200,",
+          "    // поэтому проверяем именно текст тела на сигнатуры PHP-ошибок/исключений.",
+          "    var t = pm.response.text() || '';",
+          "    pm.expect(t).to.not.match(/Fatal error|Uncaught|Call to undefined|Stack trace|must be of type|Return value must be|Too few arguments|Argument #\\d|TypeError|<b>(Warning|Notice|Deprecated)<\\/b>/i);",
+          "});"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "Iblock — /api/iblock",
+      "item": [
+        {
+          "name": "Инфоблок: информация",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"siteId\": \"{{siteId}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/iblock/{{iblockCode}}", "host": ["{{baseUrl}}"], "path": ["api", "iblock", "{{iblockCode}}"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Статус 200', () => pm.expect(pm.response.code).to.eql(200));"
+          ] } }]
+        },
+        {
+          "name": "Инфоблок: НЕ найден (ожидаем 404)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"siteId\": \"{{siteId}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/iblock/__no_such_iblock__", "host": ["{{baseUrl}}"], "path": ["api", "iblock", "__no_such_iblock__"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Несуществующий инфоблок → 404', () => pm.expect(pm.response.code).to.eql(404));",
+            "pm.test('Тело ошибки — JSON с message', () => pm.expect(pm.response.json()).to.have.property('message'));"
+          ] } }]
+        },
+        {
+          "name": "Список элементов",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"siteId\": \"{{siteId}}\",\n  \"limit\": 5,\n  \"offset\": 0,\n  \"SHOW_TOTAL\": \"Y\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/iblock/{{iblockCode}}/elements", "host": ["{{baseUrl}}"], "path": ["api", "iblock", "{{iblockCode}}", "elements"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Статус 200', () => pm.expect(pm.response.code).to.eql(200));",
+            "var j = pm.response.json();",
+            "pm.test('Есть items (сырой ответ, без обёртки data)', () => pm.expect(j).to.have.property('items'));",
+            "pm.test('meta.total при SHOW_TOTAL=Y', () => pm.expect(j.meta || {}).to.have.property('total'));",
+            "pm.collectionVariables.set('elementsTotal', j.meta.total);"
+          ] } }]
+        },
+        {
+          "name": "Список элементов: случайная сортировка RAND",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"siteId\": \"{{siteId}}\",\n  \"order\": { \"RAND\": \"ASC\" },\n  \"limit\": 5\n}" },
+            "url": { "raw": "{{baseUrl}}/api/iblock/{{iblockCode}}/elements", "host": ["{{baseUrl}}"], "path": ["api", "iblock", "{{iblockCode}}", "elements"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Статус 200', () => pm.expect(pm.response.code).to.eql(200));"
+          ] } }]
+        },
+        {
+          "name": "Список элементов: SHOW_TOTAL=N (проверка ключа кеша)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"siteId\": \"{{siteId}}\",\n  \"limit\": 5,\n  \"SHOW_TOTAL\": \"N\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/iblock/{{iblockCode}}/elements", "host": ["{{baseUrl}}"], "path": ["api", "iblock", "{{iblockCode}}", "elements"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Статус 200', () => pm.expect(pm.response.code).to.eql(200));"
+          ] } }]
+        },
+        {
+          "name": "Список элементов: limit выше максимума (400)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"siteId\": \"{{siteId}}\",\n  \"limit\": 1000\n}" },
+            "url": { "raw": "{{baseUrl}}/api/iblock/{{iblockCode}}/elements", "host": ["{{baseUrl}}"], "path": ["api", "iblock", "{{iblockCode}}", "elements"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('limit > 500: HTTP 400', () => pm.expect(pm.response.code).to.eql(400));"
+          ] } }]
+        },
+        {
+          "name": "Список элементов: фильтр по 200 ID (лимит сложности не срабатывает)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"siteId\": \"{{siteId}}\",\n  \"limit\": 5,\n  \"filter\": { \"ID\": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200] }\n}" },
+            "url": { "raw": "{{baseUrl}}/api/iblock/{{iblockCode}}/elements", "host": ["{{baseUrl}}"], "path": ["api", "iblock", "{{iblockCode}}", "elements"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Статус 200', () => pm.expect(pm.response.code).to.eql(200));",
+            "pm.test('Тело — items, а не ошибка лимита', () => pm.expect(pm.response.json()).to.have.property('items'));"
+          ] } }]
+        },
+        {
+          "name": "Список элементов: сортировка ASC,NULLS",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"siteId\": \"{{siteId}}\",\n  \"limit\": 5,\n  \"order\": { \"SORT\": \"ASC,NULLS\" }\n}" },
+            "url": { "raw": "{{baseUrl}}/api/iblock/{{iblockCode}}/elements", "host": ["{{baseUrl}}"], "path": ["api", "iblock", "{{iblockCode}}", "elements"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Направление ASC,NULLS принимается', () => pm.expect(pm.response.code).to.eql(200));"
+          ] } }]
+        },
+        {
+          "name": "Список элементов: управляющие ключи фильтра игнорируются",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"siteId\": \"{{siteId}}\",\n  \"limit\": 5,\n  \"SHOW_TOTAL\": \"Y\",\n  \"filter\": { \"LOGIC\": \"OR\", \"PERMISSIONS_BY\": 1, \"SHOW_HISTORY\": \"Y\", \"SHOW_NEW\": \"Y\" }\n}" },
+            "url": { "raw": "{{baseUrl}}/api/iblock/{{iblockCode}}/elements", "host": ["{{baseUrl}}"], "path": ["api", "iblock", "{{iblockCode}}", "elements"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Статус 200', () => pm.expect(pm.response.code).to.eql(200));",
+            "var j = pm.response.json();",
+            "// Управляющие ключи вырезаются, поэтому выборка не расширяется: total как без фильтра",
+            "pm.test('LOGIC/PERMISSIONS_BY/SHOW_HISTORY не расширяют выборку', () => pm.expect(j.meta.total).to.eql(Number(pm.collectionVariables.get('elementsTotal'))));",
+            "pm.test('Все элементы из запрошенного инфоблока', () => { var ids = (j.items || []).map(i => String(i.IBLOCK_ID)); pm.expect(new Set(ids).size).to.be.at.most(1); });"
+          ] } }]
+        },
+        {
+          "name": "Список элементов: некорректный JSON (400)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"limit\": 5" },
+            "url": { "raw": "{{baseUrl}}/api/iblock/{{iblockCode}}/elements", "host": ["{{baseUrl}}"], "path": ["api", "iblock", "{{iblockCode}}", "elements"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Битое JSON-тело при Content-Type: application/json — HTTP 400', () => pm.expect(pm.response.code).to.eql(400));"
+          ] } }]
+        },
+        {
+          "name": "Элемент по коду",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"siteId\": \"{{siteId}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/iblock/{{iblockCode}}/element/code/{{elementCode}}", "host": ["{{baseUrl}}"], "path": ["api", "iblock", "{{iblockCode}}", "element", "code", "{{elementCode}}"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Статус 200 (переменная должна указывать на существующую запись)', () => pm.expect(pm.response.code).to.eql(200));",
+            "const data = pm.response.json();",
+            "pm.test('BREADCRUMBS — непустой массив звеньев с TEXT', () => {",
+            "  pm.expect(data.BREADCRUMBS).to.be.an('array').that.is.not.empty;",
+            "  data.BREADCRUMBS.forEach(link => pm.expect(link).to.have.property('TEXT'));",
+            "});",
+            "pm.test('Последнее звено BREADCRUMBS — сам элемент, без HREF', () => {",
+            "  pm.expect(data.BREADCRUMBS[data.BREADCRUMBS.length - 1]).to.not.have.property('HREF');",
+            "});",
+            "pm.test('В ответе есть SECTION_URL', () => pm.expect(data).to.have.property('SECTION_URL'));"
+          ] } }]
+        },
+        {
+          "name": "Элемент по коду: propertyCode = [*]",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"siteId\": \"{{siteId}}\",\n  \"propertyCode\": [\"*\"]\n}" },
+            "url": { "raw": "{{baseUrl}}/api/iblock/{{iblockCode}}/element/code/{{elementCode}}", "host": ["{{baseUrl}}"], "path": ["api", "iblock", "{{iblockCode}}", "element", "code", "{{elementCode}}"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Статус 200 (переменная должна указывать на существующую запись)', () => pm.expect(pm.response.code).to.eql(200));"
+          ] } }]
+        },
+        {
+          "name": "Элемент по коду: НЕ найден (ожидаем 404)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"siteId\": \"{{siteId}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/iblock/{{iblockCode}}/element/code/__no_such_element__", "host": ["{{baseUrl}}"], "path": ["api", "iblock", "{{iblockCode}}", "element", "code", "__no_such_element__"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Несуществующий элемент → 404', () => pm.expect(pm.response.code).to.eql(404));",
+            "pm.test('Тело ошибки — JSON с message', () => pm.expect(pm.response.json()).to.have.property('message'));"
+          ] } }]
+        },
+        {
+          "name": "Элемент по id",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"siteId\": \"{{siteId}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/iblock/{{iblockCode}}/element/id/{{elementId}}", "host": ["{{baseUrl}}"], "path": ["api", "iblock", "{{iblockCode}}", "element", "id", "{{elementId}}"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Статус 200 (переменная должна указывать на существующую запись)', () => pm.expect(pm.response.code).to.eql(200));"
+          ] } }]
+        },
+        {
+          "name": "Список разделов",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"siteId\": \"{{siteId}}\",\n  \"limit\": 5,\n  \"SHOW_TOTAL\": \"Y\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/iblock/{{iblockCode}}/sections", "host": ["{{baseUrl}}"], "path": ["api", "iblock", "{{iblockCode}}", "sections"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Статус 200', () => pm.expect(pm.response.code).to.eql(200));",
+            "var j = pm.response.json();",
+            "pm.test('meta.total присутствует при SHOW_TOTAL=Y', () => pm.expect(j.meta || {}).to.have.property('total'));"
+          ] } }]
+        },
+        {
+          "name": "Раздел по коду",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"siteId\": \"{{siteId}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/iblock/{{iblockCode}}/section/code/{{sectionCode}}", "host": ["{{baseUrl}}"], "path": ["api", "iblock", "{{iblockCode}}", "section", "code", "{{sectionCode}}"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Статус 200 (переменная должна указывать на существующий раздел)', () => pm.expect(pm.response.code).to.eql(200));",
+            "const data = pm.response.json();",
+            "pm.test('BREADCRUMBS — непустой массив звеньев с TEXT и HREF', () => {",
+            "  pm.expect(data.BREADCRUMBS).to.be.an('array').that.is.not.empty;",
+            "  data.BREADCRUMBS.forEach(link => {",
+            "    pm.expect(link).to.have.property('TEXT');",
+            "    pm.expect(link).to.have.property('HREF');",
+            "  });",
+            "});",
+            "pm.test('Звено текущего раздела — с пустым HREF', () => {",
+            "  pm.expect(data.BREADCRUMBS[data.BREADCRUMBS.length - 1].HREF).to.eql('');",
+            "});"
+          ] } }]
+        },
+        {
+          "name": "Раздел по id (символьный код инфоблока)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"siteId\": \"{{siteId}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/iblock/{{iblockCode}}/section/id/{{sectionId}}", "host": ["{{baseUrl}}"], "path": ["api", "iblock", "{{iblockCode}}", "section", "id", "{{sectionId}}"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Статус 200 (переменная должна указывать на существующую запись)', () => pm.expect(pm.response.code).to.eql(200));"
+          ] } }]
+        },
+        {
+          "name": "Данные фильтра",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"siteId\": \"{{siteId}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/iblock/{{iblockCode}}/filter", "host": ["{{baseUrl}}"], "path": ["api", "iblock", "{{iblockCode}}", "filter"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Статус 200', () => pm.expect(pm.response.code).to.eql(200));",
+            "const body = pm.response.json();",
+            "pm.test('Ответ — массив свойств', () => pm.expect(body).to.be.an('array'));",
+            "const data = Array.isArray(body) ? body : [];",
+            "pm.test('У каждого свойства есть code, propertyType и непустой items', () => {",
+            "  data.forEach(prop => {",
+            "    pm.expect(prop).to.have.property('code');",
+            "    pm.expect(prop).to.have.property('propertyType');",
+            "    pm.expect(prop.items, 'items свойства ' + prop.code).to.be.an('array').that.is.not.empty;",
+            "    prop.items.forEach(item => {",
+            "      pm.expect(item).to.have.property('value');",
+            "      pm.expect(item).to.have.property('text');",
+            "    });",
+            "  });",
+            "});",
+            "const listProps = data.filter(prop => prop.propertyType === 'L');",
+            "(listProps.length ? pm.test : pm.test.skip)('Свойства типа «Список» (L) отдают значения: value — ID перечисления', () => {",
+            "  listProps.forEach(prop => {",
+            "    prop.items.forEach(item => pm.expect(Number(item.value), 'value значения свойства ' + prop.code).to.be.a('number').and.not.NaN);",
+            "  });",
+            "});",
+            "const baseline = {};",
+            "data.forEach(prop => { baseline[prop.code] = { propertyType: prop.propertyType, count: (prop.items || []).length, sampleValue: (prop.items || []).length ? prop.items[0].value : null }; });",
+            "pm.collectionVariables.set('filterBaseline', JSON.stringify(baseline));"
+          ] } }]
+        },
+        {
+          "name": "Данные фильтра — сужение переданным filter",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"siteId\": \"{{siteId}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/iblock/{{iblockCode}}/filter", "host": ["{{baseUrl}}"], "path": ["api", "iblock", "{{iblockCode}}", "filter"] }
+          },
+          "event": [
+            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
+              "// Фильтр строится по первому свойству из предыдущего запроса «Данные фильтра».",
+              "const raw = pm.collectionVariables.get('filterBaseline');",
+              "const body = { siteId: pm.variables.get('siteId') };",
+              "pm.collectionVariables.unset('filterTargetCode');",
+              "if (raw) {",
+              "  const baseline = JSON.parse(raw);",
+              "  const target = Object.keys(baseline).find(code => baseline[code].sampleValue !== null);",
+              "  if (target) {",
+              "    pm.collectionVariables.set('filterTargetCode', target);",
+              "    body.filter = {};",
+              "    body.filter['PROPERTY_' + target] = baseline[target].sampleValue;",
+              "  }",
+              "}",
+              "pm.request.body.update({ mode: 'raw', raw: JSON.stringify(body) });"
+            ] } },
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('Статус 200', () => pm.expect(pm.response.code).to.eql(200));",
+              "const target = pm.collectionVariables.get('filterTargetCode');",
+              "const baseline = JSON.parse(pm.collectionVariables.get('filterBaseline') || '{}');",
+              "(target ? pm.test : pm.test.skip)('Переданный filter сужает значения других свойств', () => {",
+              "  pm.response.json().forEach(prop => {",
+              "    if (prop.code === target) { return; }",
+              "    const base = baseline[prop.code];",
+              "    if (!base) { return; }",
+              "    pm.expect(prop.items.length, 'значения свойства ' + prop.code + ' не шире набора без фильтра').to.be.at.most(base.count);",
+              "  });",
+              "});",
+              "(target ? pm.test : pm.test.skip)('Свойство из filter не сужает собственный список значений', () => {",
+              "  const prop = pm.response.json().find(item => item.code === target);",
+              "  pm.expect(prop, 'свойство ' + target + ' осталось в ответе').to.not.be.undefined;",
+              "  pm.expect(prop.items.length).to.eql(baseline[target].count);",
+              "});"
+            ] } }
+          ]
+        },
+        {
+          "name": "Все свойства инфоблока",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"siteId\": \"{{siteId}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/iblock/{{iblockCode}}/properties", "host": ["{{baseUrl}}"], "path": ["api", "iblock", "{{iblockCode}}", "properties"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Статус 200', () => pm.expect(pm.response.code).to.eql(200));"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "Highload — /api/hlblock",
+      "item": [
+        {
+          "name": "Список элементов HL",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"siteId\": \"{{siteId}}\",\n  \"limit\": 5,\n  \"offset\": 0,\n  \"SHOW_TOTAL\": \"Y\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/hlblock/{{hlblockCode}}/elements", "host": ["{{baseUrl}}"], "path": ["api", "hlblock", "{{hlblockCode}}", "elements"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "// HL-блок публичен, пока на нём не выдано право hl_element_read; если выдано — ожидается 403.",
+            "// Проверяет в т.ч. множественные поля-привязки (регресс 1.8.0: TypeError).",
+            "pm.test('Статус 200', () => pm.expect(pm.response.code).to.eql(200));",
+            "var j = pm.response.json();",
+            "pm.test('items присутствует (сырой ответ, data.items)', () => pm.expect(j).to.have.property('items'));",
+            "pm.test('limit не превышает 500', () => pm.expect(j.meta.limit).to.be.at.most(500));"
+          ] } }]
+        },
+        {
+          "name": "HL: НЕ найден (ожидаем 404)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"siteId\": \"{{siteId}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/hlblock/__no_such_hl__/elements", "host": ["{{baseUrl}}"], "path": ["api", "hlblock", "__no_such_hl__", "elements"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Несуществующий HL → 404', () => pm.expect(pm.response.code).to.eql(404));",
+            "pm.test('Тело ошибки — JSON с message', () => pm.expect(pm.response.json()).to.have.property('message'));"
+          ] } }]
+        },
+        {
+          "name": "Данные фильтра HL",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"siteId\": \"{{siteId}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/hlblock/{{hlblockCode}}/filter", "host": ["{{baseUrl}}"], "path": ["api", "hlblock", "{{hlblockCode}}", "filter"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Статус 200', () => pm.expect(pm.response.code).to.eql(200));"
+          ] } }]
+        },
+        {
+          "name": "Поля HL",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"siteId\": \"{{siteId}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/hlblock/{{hlblockCode}}/fields", "host": ["{{baseUrl}}"], "path": ["api", "hlblock", "{{hlblockCode}}", "fields"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Статус 200', () => pm.expect(pm.response.code).to.eql(200));"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "Pages — /api/pages",
+      "item": [
+        {
+          "name": "Страница по коду",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"siteId\": \"{{siteId}}\",\n  \"propertyCode\": [\"*\"]\n}" },
+            "url": { "raw": "{{baseUrl}}/api/pages/{{pageCode}}", "host": ["{{baseUrl}}"], "path": ["api", "pages", "{{pageCode}}"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Статус 200 (переменная должна указывать на существующую запись)', () => pm.expect(pm.response.code).to.eql(200));",
+            "const data = pm.response.json();",
+            "pm.test('В ответе есть CONTENT — статический контент страницы', () => pm.expect(data).to.have.property('CONTENT'));",
+            "pm.test('CONTENT — объект блоков вида CONTENT[UF_BLOCK][UF_CODE]', () => {",
+            "  pm.expect(data.CONTENT).to.be.an('object');",
+            "  Object.values(data.CONTENT).forEach(block => pm.expect(block).to.be.an('object'));",
+            "});",
+            "pm.collectionVariables.set('pageContent', JSON.stringify(data.CONTENT || {}));"
+          ] } }]
+        },
+        {
+          "name": "Страница: CONTENT совпадает с /api/content/page/{code}",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"siteId\": \"{{siteId}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/content/page/{{pageCode}}", "host": ["{{baseUrl}}"], "path": ["api", "content", "page", "{{pageCode}}"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Статус 200', () => pm.expect(pm.response.code).to.eql(200));",
+            "const fromPage = pm.collectionVariables.get('pageContent');",
+            "(fromPage ? pm.test : pm.test.skip)('Контент тот же, что в CONTENT ответа /api/pages/{code}', () => {",
+            "  pm.expect(pm.response.json()).to.eql(JSON.parse(fromPage));",
+            "});"
+          ] } }]
+        },
+        {
+          "name": "Страница: НЕ найдена (ожидаем 404)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"siteId\": \"{{siteId}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/pages/__no_such_page__", "host": ["{{baseUrl}}"], "path": ["api", "pages", "__no_such_page__"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Несуществующая страница → 404', () => pm.expect(pm.response.code).to.eql(404));",
+            "pm.test('Тело ошибки — JSON с message', () => pm.expect(pm.response.json()).to.have.property('message'));"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "Forms — /api/forms",
+      "item": [
+        {
+          "name": "Поля формы (GET)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"siteId\": \"{{siteId}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/forms/{{formCode}}/fields", "host": ["{{baseUrl}}"], "path": ["api", "forms", "{{formCode}}", "fields"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Статус 200', () => pm.expect(pm.response.code).to.eql(200));"
+          ] } }]
+        },
+        {
+          "name": "Поля формы: POST на GET-роут (ожидаем 4xx)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"siteId\": \"{{siteId}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/forms/{{formCode}}/fields", "host": ["{{baseUrl}}"], "path": ["api", "forms", "{{formCode}}", "fields"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Метод не GET → 4xx (обычно 404/405)', () => pm.expect(pm.response.code).to.be.within(400, 499));"
+          ] } }]
+        },
+        {
+          "name": "Структура формы (ANY)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"siteId\": \"{{siteId}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/forms/{{formCode}}", "host": ["{{baseUrl}}"], "path": ["api", "forms", "{{formCode}}"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Статус 200', () => pm.expect(pm.response.code).to.eql(200));"
+          ] } }]
+        },
+        {
+          "name": "Отправка формы (POST /add)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/x-www-form-urlencoded" }],
+            "body": { "mode": "urlencoded", "urlencoded": [
+              { "key": "siteId", "value": "{{siteId}}" },
+              { "key": "form_text_NAME", "value": "Test", "description": "Замените на реальные SID полей вашей формы" }
+            ] },
+            "url": { "raw": "{{baseUrl}}/api/forms/{{formCode}}/add", "host": ["{{baseUrl}}"], "path": ["api", "forms", "{{formCode}}", "add"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "// Форма должна существовать; успех и валидационная ошибка — оба HTTP 200. 404 = неверный formCode.",
+            "pm.test('Статус 200 (форма найдена и обработана)', () => pm.expect(pm.response.code).to.eql(200));",
+            "pm.test('urlencoded-тело не отбивается как некорректный JSON', () => pm.expect(pm.response.code).to.not.eql(400));"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "Content — /api/content",
+      "item": [
+        {
+          "name": "Публичный контент страницы",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"siteId\": \"{{siteId}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/content/page/{{contentPageCode}}", "host": ["{{baseUrl}}"], "path": ["api", "content", "page", "{{contentPageCode}}"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Статус 200', () => pm.expect(pm.response.code).to.eql(200));"
+          ] } }]
+        },
+        {
+          "name": "Админ-список контента (нужна авторизация)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/x-www-form-urlencoded" }],
+            "body": { "mode": "urlencoded", "urlencoded": [
+              { "key": "page", "value": "1" },
+              { "key": "pageSize", "value": "20" }
+            ] },
+            "url": { "raw": "{{baseUrl}}/api/content/admin/{{contentPageCode}}", "host": ["{{baseUrl}}"], "path": ["api", "content", "admin", "{{contentPageCode}}"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "// Требует авторизацию + право hl_element_read. Без них — HTTP 200 + {status:error} «Доступ запрещён».",
+            "var j = pm.response.json();",
+            "pm.test('Статус 200', () => pm.expect(pm.response.code).to.eql(200));",
+            "pm.test('Ответ без ошибки доступа (нужна авторизация + права)', function () {",
+            "    var msg = (j && j.errors && j.errors[0]) ? j.errors[0].message : '';",
+            "    pm.expect(j && j.status === 'error', 'ответ с ошибкой: ' + msg).to.be.false;",
+            "});"
+          ] } }]
+        },
+        {
+          "name": "Bulk БЕЗ sessid (CSRF: ожидаем отказ)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/x-www-form-urlencoded" }],
+            "body": { "mode": "urlencoded", "urlencoded": [
+              { "key": "action", "value": "deactivate" },
+              { "key": "ids[0]", "value": "{{contentElementId}}" }
+            ] },
+            "url": { "raw": "{{baseUrl}}/api/content/bulk", "host": ["{{baseUrl}}"], "path": ["api", "content", "bulk"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "// CSRF (регресс 1.8.0): мутация без sessid должна отклоняться → в теле status=error.",
+            "var j = pm.response.json();",
+            "pm.test('Отказ доступа: тело status=error', () => pm.expect(j && j.status).to.eql('error'));"
+          ] } }]
+        },
+        {
+          "name": "Bulk С sessid",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/x-www-form-urlencoded" }],
+            "body": { "mode": "urlencoded", "urlencoded": [
+              { "key": "action", "value": "deactivate" },
+              { "key": "ids[0]", "value": "{{contentElementId}}" },
+              { "key": "sessid", "value": "{{bitrixSessid}}" }
+            ] },
+            "url": { "raw": "{{baseUrl}}/api/content/bulk", "host": ["{{baseUrl}}"], "path": ["api", "content", "bulk"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "// Требует авторизацию + право hl_element_write + валидный bitrixSessid.",
+            "// Без них — status:error «Доступ запрещён», тест упадёт (так и надо).",
+            "var j = pm.response.json();",
+            "pm.test('Выполнено без ошибки', function () {",
+            "    var msg = (j && j.errors && j.errors[0]) ? j.errors[0].message : '';",
+            "    pm.expect(j && j.status === 'error', 'ответ с ошибкой: ' + msg).to.be.false;",
+            "});"
+          ] } }]
+        },
+        {
+          "name": "Delete БЕЗ sessid (CSRF: ожидаем отказ)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/content/admin/{{contentElementId}}", "host": ["{{baseUrl}}"], "path": ["api", "content", "admin", "{{contentElementId}}"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "// CSRF: удаление без sessid должно отклоняться → в теле status=error.",
+            "var j = pm.response.json();",
+            "pm.test('Отказ доступа: тело status=error', () => pm.expect(j && j.status).to.eql('error'));"
+          ] } }]
+        },
+        {
+          "name": "Delete С sessid",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/content/admin/{{contentElementId}}?sessid={{bitrixSessid}}", "host": ["{{baseUrl}}"], "path": ["api", "content", "admin", "{{contentElementId}}"], "query": [{ "key": "sessid", "value": "{{bitrixSessid}}" }] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "// ВНИМАНИЕ: реально удаляет элемент при валидных sessid+правах. Запускать осознанно.",
+            "// Без авторизации — status:error, тест упадёт.",
+            "var j = pm.response.json();",
+            "pm.test('Выполнено без ошибки', function () {",
+            "    var msg = (j && j.errors && j.errors[0]) ? j.errors[0].message : '';",
+            "    pm.expect(j && j.status === 'error', 'ответ с ошибкой: ' + msg).to.be.false;",
+            "});"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "Menus — /api/menus",
+      "item": [
+        {
+          "name": "Меню по коду",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"siteId\": \"{{siteId}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/menus/{{menuCode}}", "host": ["{{baseUrl}}"], "path": ["api", "menus", "{{menuCode}}"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Статус 200', () => pm.expect(pm.response.code).to.eql(200));"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "Search — /api/search",
+      "item": [
+        {
+          "name": "Поиск: обычный запрос",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"siteId\": \"{{siteId}}\",\n  \"search\": \"{{searchQuery}}\",\n  \"limit\": 10,\n  \"offset\": 0\n}" },
+            "url": { "raw": "{{baseUrl}}/api/search", "host": ["{{baseUrl}}"], "path": ["api", "search"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Статус 200', () => pm.expect(pm.response.code).to.eql(200));"
+          ] } }]
+        },
+        {
+          "name": "Поиск: ПУСТОЕ тело (регресс 1.8.0 — было 500)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/search", "host": ["{{baseUrl}}"], "path": ["api", "search"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Пустое тело: HTTP 200 (регресс — было 500)', () => pm.expect(pm.response.code).to.eql(200));"
+          ] } }]
+        },
+        {
+          "name": "Поиск: limit=0 отклоняется",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"siteId\": \"{{siteId}}\",\n  \"search\": \"{{searchQuery}}\",\n  \"limit\": 0\n}" },
+            "url": { "raw": "{{baseUrl}}/api/search", "host": ["{{baseUrl}}"], "path": ["api", "search"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('limit=0: HTTP 400', () => pm.expect(pm.response.code).to.eql(400));"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "Sitemap — /api/sitemap",
+      "item": [
+        {
+          "name": "Карта сайта",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"siteId\": \"{{siteId}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/sitemap", "host": ["{{baseUrl}}"], "path": ["api", "sitemap"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Статус 200', () => pm.expect(pm.response.code).to.eql(200));"
+          ] } }]
+        }
+      ]
+    }
+  ]
+}
