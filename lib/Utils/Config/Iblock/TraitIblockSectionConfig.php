@@ -2,8 +2,6 @@
 
 namespace Uplab\Api\Utils\Config\Iblock;
 
-use Uplab\Api\Utils\Config\BaseConfig;
-
 trait TraitIblockSectionConfig
 {
     protected null|array|bool $bIncCnt = null;
@@ -16,7 +14,7 @@ trait TraitIblockSectionConfig
     public function setBIncCnt(null|array|bool $bIncCnt): static
     {
         if (is_array($bIncCnt)) {
-            BaseConfig::assertArrayComplexity($bIncCnt);
+            static::assertArrayComplexity($bIncCnt);
         }
         $this->bIncCnt = $bIncCnt;
         return $this;

@@ -88,6 +88,29 @@ class Search extends BaseAction
     }
 
     /**
+     * Максимальное значение `limit` для поиска.
+     *
+     * Точка расширения: у поиска нет объекта конфига, поэтому лимит меняется переопределением
+     * этого метода в наследнике модели (наследник подключается через
+     * {@see \Uplab\Api\Controller\SearchController::getModelClass()}).
+     *
+     * @return int
+     */
+    protected function getMaxLimit(): int
+    {
+        return BaseConfig::MAX_LIMIT;
+    }
+
+    /**
+     * Максимальное значение `offset` для поиска.
+     * @return int
+     */
+    protected function getMaxOffset(): int
+    {
+        return BaseConfig::MAX_OFFSET;
+    }
+
+    /**
      * Возвращает данные для поиска
      * @throws LoaderException
      * @throws ArgumentException
@@ -100,11 +123,17 @@ class Search extends BaseAction
 
         $limit = (int)($config['limit'] ?? 10);
         $offset = (int)($config['offset'] ?? 0);
-        if ($limit < 1 || $limit > BaseConfig::MAX_LIMIT) {
-            throw new ApiException('limit must be between 1 and ' . BaseConfig::MAX_LIMIT, 400);
+        if ($limit < 1 || $limit > $this->getMaxLimit()) {
+            throw new ApiException(
+                (string)Loc::getMessage('UPLAB_API.ERROR_LIMIT_RANGE', ['#MAX#' => $this->getMaxLimit()]),
+                HttpStatus::BAD_REQUEST
+            );
         }
-        if ($offset < 0 || $offset > BaseConfig::MAX_OFFSET) {
-            throw new ApiException('offset must be between 0 and ' . BaseConfig::MAX_OFFSET, 400);
+        if ($offset < 0 || $offset > $this->getMaxOffset()) {
+            throw new ApiException(
+                (string)Loc::getMessage('UPLAB_API.ERROR_OFFSET_RANGE', ['#MAX#' => $this->getMaxOffset()]),
+                HttpStatus::BAD_REQUEST
+            );
         }
         BaseConfig::assertArrayComplexity($config);
         $page = intdiv($offset, $limit) + 1;

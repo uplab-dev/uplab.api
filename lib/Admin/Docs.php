@@ -735,8 +735,57 @@ class Docs
                         . '<code>limit=1…500</code>, <code>offset=0…100000</code>; массивы условий — до 1000 элементов '
                         . 'суммарно (с учётом вложенных) и глубины 5; <code>select</code>/<code>propertyCode</code> — до 100 полей; '
                         . '<code>order</code> — до 10 полей, направления <code>ASC</code>, <code>DESC</code>, '
-                        . '<code>ASC,NULLS</code>, <code>DESC,NULLS</code>, <code>NULLS,ASC</code>, <code>NULLS,DESC</code>. '
+                        . '<code>ASC,NULLS</code>, <code>DESC,NULLS</code>, <code>NULLS,ASC</code>, <code>NULLS,DESC</code>; '
+                        . 'имя поля — до 128 символов, строковое значение условия — до 4096. '
                         . 'Прочие нарушения → <code>400</code>.',
+                ],
+                ['type' => 'heading', 'text' => 'Переопределение лимитов запросов'],
+                [
+                    'type' => 'note',
+                    'text' => 'Лимиты заданы константами <code>MAX_*</code> в <code>BaseConfig</code>, а проверки '
+                        . 'обращаются к ним через <code>static::</code>. Чтобы изменить лимит на проекте, унаследуйте '
+                        . 'нужный конфиг, переопределите константу и подключите наследника фабрикой класса конфига '
+                        . 'в контроллере (<code>get*ConfigClass()</code>) — тела проверок и экшенов копировать не нужно. '
+                        . 'Лимит можно как поднять, так и ужесточить; остальные endpoint-ы продолжают работать со '
+                        . 'штатными значениями.',
+                ],
+                ['type' => 'html', 'html' => static::renderCode(
+                    "class ProjectListConfig extends \\Uplab\\Api\\Utils\\Config\\Iblock\\IblockListElementsConfig\n{\n    public const MAX_LIMIT = 2000;\n}\n\nclass ProjectIblockController extends \\Uplab\\Api\\Controller\\IblockController\n{\n    protected function getElementListConfigClass(): string\n    {\n        return ProjectListConfig::class;\n    }\n}",
+                    'Свой лимит limit для списка элементов',
+                    'php'
+                )],
+                [
+                    'type' => 'table',
+                    'head' => ['Фабрика', 'Контроллер', 'Endpoint'],
+                    'rows' => [
+                        ['getIblockConfigClass()', 'IblockController', '/api/iblock/{code}'],
+                        ['getElementListConfigClass()', 'IblockController', '/api/iblock/{code}/elements'],
+                        ['getElementDetailConfigClass()', 'IblockController', '/api/iblock/{code}/element/code|id/{...}'],
+                        ['getSectionListConfigClass()', 'IblockController', '/api/iblock/{code}/sections'],
+                        ['getSectionDetailConfigClass()', 'IblockController', '/api/iblock/{code}/section/code|id/{...}'],
+                        ['getElementFilterConfigClass()', 'IblockController', '/api/iblock/{code}/filter'],
+                        ['getIblockPropertiesConfigClass()', 'IblockController', '/api/iblock/{code}/properties'],
+                        ['getElementListConfigClass()', 'HlblockController', '/api/hlblock/{code}/elements'],
+                        ['getElementFilterConfigClass()', 'HlblockController', '/api/hlblock/{code}/filter'],
+                        ['getFieldsConfigClass()', 'HlblockController', '/api/hlblock/{code}/fields'],
+                        ['getPageConfigClass()', 'PageController', '/api/pages/{code}'],
+                        ['getMenuConfigClass()', 'MenuController', '/api/menus/{code}'],
+                    ],
+                ],
+                [
+                    'type' => 'note',
+                    'text' => 'У поиска и административных endpoint-ов контента объекта конфига нет, поэтому там лимиты '
+                        . 'меняются переопределением методов модели/контроллера: <code>Search::getMaxLimit()</code>, '
+                        . '<code>Search::getMaxOffset()</code>, <code>ContentController::getMaxPageSize()</code>, '
+                        . '<code>ContentController::getMaxOffset()</code>, <code>ContentController::getMaxBulkIds()</code>.',
+                ],
+                [
+                    'type' => 'note',
+                    'text' => '<b>Тексты ошибок.</b> Сообщения берутся из языковых сообщений модуля '
+                        . '(<code>UPLAB_API.ERROR_*</code> в <code>lang/{ru,en}/include.php</code>), лимит подставляется '
+                        . 'плейсхолдером <code>#MAX#</code> — в том числе лимит наследника, если проект его поднял. '
+                        . 'Формулировку можно изменить на проекте штатным переопределением языковых сообщений Битрикс. '
+                        . 'HTTP-статусы задаются кейсами <code>Uplab\\Api\\Enums\\HttpStatus</code>, а не числами.',
                 ],
                 ['type' => 'heading', 'text' => 'Формат ответа'],
                 [

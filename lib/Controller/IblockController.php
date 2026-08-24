@@ -25,7 +25,7 @@ class IblockController extends BaseController
      */
     public function getIblockAction(string $iblockCode): Json
     {
-        return $this->getModelClass()->getIblockAction($iblockCode, IblockDetailConfig::create($this->getJsonRequestBody()));
+        return $this->getModelClass()->getIblockAction($iblockCode, $this->createConfig($this->getIblockConfigClass()));
     }
 
     /**
@@ -35,7 +35,7 @@ class IblockController extends BaseController
      */
     public function getElementFilterAction(string $iblockCode): Json
     {
-        return $this->getModelClass()->getFilterElementsAction($iblockCode, IblockFilterConfig::create($this->getJsonRequestBody()));
+        return $this->getModelClass()->getFilterElementsAction($iblockCode, $this->createConfig($this->getElementFilterConfigClass()));
     }
 
     /**
@@ -45,7 +45,7 @@ class IblockController extends BaseController
      */
     public function getElementListAction(string $iblockCode): Json
     {
-        return $this->getModelClass()->getElementListAction($iblockCode, IblockListElementsConfig::create($this->getJsonRequestBody()));
+        return $this->getModelClass()->getElementListAction($iblockCode, $this->createConfig($this->getElementListConfigClass()));
     }
 
     /**
@@ -60,7 +60,7 @@ class IblockController extends BaseController
      */
     public function getElementDetailByCodeAction(string $iblockCode, string $elementCode): Json
     {
-        return $this->getModelClass()->getElementDetailByCodeAction($iblockCode, $elementCode, IblockDetailElementConfig::create($this->getJsonRequestBody()));
+        return $this->getModelClass()->getElementDetailByCodeAction($iblockCode, $elementCode, $this->createConfig($this->getElementDetailConfigClass()));
     }
 
     /**
@@ -71,7 +71,7 @@ class IblockController extends BaseController
      */
     public function getElementDetailByIdAction(string $iblockCode, int $elementId): Json
     {
-        return $this->getModelClass()->getElementDetailByIdAction($iblockCode, $elementId, IblockDetailElementConfig::create($this->getJsonRequestBody()));
+        return $this->getModelClass()->getElementDetailByIdAction($iblockCode, $elementId, $this->createConfig($this->getElementDetailConfigClass()));
     }
 
     /**
@@ -81,7 +81,7 @@ class IblockController extends BaseController
      */
     public function getSectionListAction(string $iblockCode): Json
     {
-        return $this->getModelClass()->getSectionListAction($iblockCode, IblockListSectionsConfig::create($this->getJsonRequestBody()));
+        return $this->getModelClass()->getSectionListAction($iblockCode, $this->createConfig($this->getSectionListConfigClass()));
     }
 
     /**
@@ -96,7 +96,7 @@ class IblockController extends BaseController
      */
     public function getSectionDetailByCodeAction(string $iblockCode, string $sectionCode): Json
     {
-        return $this->getModelClass()->getSectionDetailByCodeAction($iblockCode, $sectionCode, IblockDetailSectionConfig::create($this->getJsonRequestBody()));
+        return $this->getModelClass()->getSectionDetailByCodeAction($iblockCode, $sectionCode, $this->createConfig($this->getSectionDetailConfigClass()));
     }
 
     /**
@@ -107,7 +107,7 @@ class IblockController extends BaseController
      */
     public function getSectionDetailByIdAction(string $iblockCode, int $sectionId): Json
     {
-        return $this->getModelClass()->getSectionDetailByIdAction($iblockCode, $sectionId, IblockDetailSectionConfig::create($this->getJsonRequestBody()));
+        return $this->getModelClass()->getSectionDetailByIdAction($iblockCode, $sectionId, $this->createConfig($this->getSectionDetailConfigClass()));
     }
 
     /**
@@ -121,7 +121,76 @@ class IblockController extends BaseController
      */
     public function getIblockPropertiesAction(string $iblockCode): Json
     {
-        return $this->getModelClass()->getIblockPropertiesAction($iblockCode, IblockListConfig::create($this->getJsonRequestBody()));
+        return $this->getModelClass()->getIblockPropertiesAction($iblockCode, $this->createConfig($this->getIblockPropertiesConfigClass()));
+    }
+
+    /**
+     * Класс конфига для {@see static::getIblockAction()}.
+     *
+     * Точка расширения: наследник контроллера может вернуть свой конфиг — например с поднятыми
+     * лимитами запроса (см. README, раздел «Переопределение лимитов запросов»).
+     *
+     * @return string Класс-наследник {@see IblockDetailConfig}
+     */
+    protected function getIblockConfigClass(): string
+    {
+        return IblockDetailConfig::class;
+    }
+
+    /**
+     * Класс конфига для {@see static::getElementFilterAction()}.
+     * @return string Класс-наследник {@see IblockFilterConfig}
+     */
+    protected function getElementFilterConfigClass(): string
+    {
+        return IblockFilterConfig::class;
+    }
+
+    /**
+     * Класс конфига для {@see static::getElementListAction()}.
+     * @return string Класс-наследник {@see IblockListElementsConfig}
+     */
+    protected function getElementListConfigClass(): string
+    {
+        return IblockListElementsConfig::class;
+    }
+
+    /**
+     * Класс конфига для детальных элемента: {@see static::getElementDetailByCodeAction()}
+     * и {@see static::getElementDetailByIdAction()}.
+     * @return string Класс-наследник {@see IblockDetailElementConfig}
+     */
+    protected function getElementDetailConfigClass(): string
+    {
+        return IblockDetailElementConfig::class;
+    }
+
+    /**
+     * Класс конфига для {@see static::getSectionListAction()}.
+     * @return string Класс-наследник {@see IblockListSectionsConfig}
+     */
+    protected function getSectionListConfigClass(): string
+    {
+        return IblockListSectionsConfig::class;
+    }
+
+    /**
+     * Класс конфига для детальных раздела: {@see static::getSectionDetailByCodeAction()}
+     * и {@see static::getSectionDetailByIdAction()}.
+     * @return string Класс-наследник {@see IblockDetailSectionConfig}
+     */
+    protected function getSectionDetailConfigClass(): string
+    {
+        return IblockDetailSectionConfig::class;
+    }
+
+    /**
+     * Класс конфига для {@see static::getIblockPropertiesAction()}.
+     * @return string Класс-наследник {@see IblockListConfig}
+     */
+    protected function getIblockPropertiesConfigClass(): string
+    {
+        return IblockListConfig::class;
     }
 
     /**

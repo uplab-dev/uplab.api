@@ -10,6 +10,7 @@ use Bitrix\Main\Localization\Loc;
 use Bitrix\Main\Engine\ActionFilter\Authentication;
 use Bitrix\Main\Engine\ActionFilter\Csrf;
 use Bitrix\Main\Engine\ActionFilter\HttpMethod;
+use Uplab\Api\Enums\HttpStatus;
 use Uplab\Api\Exception\ApiException;
 use Uplab\Api\Utils\Config\BaseConfig;
 
@@ -41,6 +42,37 @@ class ContentController extends BaseController
         ];
     }
 
+    /**
+     * Максимальный размер страницы в списке записей контента.
+     *
+     * Точка расширения: административные экшены контента конфига запроса не используют, поэтому
+     * лимиты меняются переопределением этих методов в наследнике контроллера.
+     *
+     * @return int
+     */
+    protected function getMaxPageSize(): int
+    {
+        return BaseConfig::MAX_LIMIT;
+    }
+
+    /**
+     * Максимальное смещение в списке записей контента.
+     * @return int
+     */
+    protected function getMaxOffset(): int
+    {
+        return BaseConfig::MAX_OFFSET;
+    }
+
+    /**
+     * Максимальное число ID в групповом действии.
+     * @return int
+     */
+    protected function getMaxBulkIds(): int
+    {
+        return BaseConfig::MAX_LIMIT;
+    }
+
     protected function getSourceEntity()
     {
         return \Uplab\Api\Model\Content\ContentTable::class;
@@ -51,11 +83,20 @@ class ContentController extends BaseController
         BaseConfig::assertCacheSegment($pageCode, 'page code');
         $page = (int)$page;
         $pageSize = (int)$pageSize;
-        if ($page < 1 || $pageSize < 1 || $pageSize > BaseConfig::MAX_LIMIT) {
-            throw new ApiException('Invalid pagination parameters', 400);
+        if ($page < 1 || $pageSize < 1 || $pageSize > $this->getMaxPageSize()) {
+            throw new ApiException(
+                (string)Loc::getMessage('UPLAB_API.ERROR_PAGINATION_INVALID'),
+                HttpStatus::BAD_REQUEST
+            );
         }
-        if (($page - 1) * $pageSize > BaseConfig::MAX_OFFSET) {
-            throw new ApiException('Pagination offset is too large', 400);
+        if (($page - 1) * $pageSize > $this->getMaxOffset()) {
+            throw new ApiException(
+                (string)Loc::getMessage(
+                    'UPLAB_API.ERROR_PAGINATION_OFFSET_TOO_LARGE',
+                    ['#MAX#' => $this->getMaxOffset()]
+                ),
+                HttpStatus::BAD_REQUEST
+            );
         }
         $canRead = false;
         $entityId = 0;
@@ -137,11 +178,14 @@ class ContentController extends BaseController
         }
 
         if (empty($ids)) {
-            $this->addError(new Error('Empty ids'));
+            $this->addError(new Error((string)Loc::getMessage('UPLAB_API.ERROR_EMPTY_IDS')));
             return [];
         }
-        if (count($ids) > BaseConfig::MAX_LIMIT) {
-            throw new ApiException('Too many ids', 400);
+        if (count($ids) > $this->getMaxBulkIds()) {
+            throw new ApiException(
+                (string)Loc::getMessage('UPLAB_API.ERROR_TOO_MANY_IDS', ['#MAX#' => $this->getMaxBulkIds()]),
+                HttpStatus::BAD_REQUEST
+            );
         }
 
         $canWrite  = false;

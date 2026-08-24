@@ -1,4 +1,5 @@
 <?php
+$MESS['UPLAB_API_MODULE_NOT_INSTALLED'] = 'Модуль uplab.api не установлен.';
 $MESS['CONTENT_PAGE_EDIT_HLBLOCK_NOT_FOUND'] = 'HlBlock не найден.';
 $MESS['CONTENT_PAGE_EDIT_TITLE_CREATE']      = 'Создание новой записи';
 $MESS['CONTENT_PAGE_EDIT_TITLE_UPDATE']      = 'Редактирование элемента №#ID#';

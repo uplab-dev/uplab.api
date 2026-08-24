@@ -16,6 +16,7 @@ use CIBlockRights;
 use Uplab\Api\Enums\HttpStatus;
 use Uplab\Api\Model\ControllerAction\BaseAction;
 use Uplab\Api\Model\Hlblock\HlblockService;
+use Uplab\Api\Utils\Config\BaseConfig;
 use Uplab\Api\Utils\Config\Iblock\IblockDetailConfig;
 use Uplab\Api\Utils\Config\Iblock\IblockDetailElementConfig;
 use Uplab\Api\Utils\Config\Iblock\IblockDetailSectionConfig;

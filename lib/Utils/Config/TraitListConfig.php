@@ -11,7 +11,7 @@ trait TraitListConfig
 
     public function setOrder(?array $order): static
     {
-        BaseConfig::assertOrder($order);
+        static::assertOrder($order);
 
         $this->order = $order;
         return $this;

@@ -254,6 +254,82 @@ git push origin vX.Y.Z
 
 Нарушение лимитов параметров возвращает `400 Bad Request`. Эти ограничения защищают БД и кеш от случайных и намеренно дорогих запросов; при проектном расширении API не обходите конфиг-классы.
 
+### Переопределение лимитов запросов
+
+Лимиты заданы константами `MAX_*` в `Uplab\Api\Utils\Config\BaseConfig`, а проверки обращаются к ним через `static::`, поэтому проект меняет любой лимит наследованием — тела проверок копировать не нужно. Наследник конфига подключается фабрикой класса конфига в контроллере (`get*ConfigClass()`), контроллер — своим маршрутом.
+
+```php
+class ProjectListConfig extends \Uplab\Api\Utils\Config\Iblock\IblockListElementsConfig
+{
+    public const MAX_LIMIT = 2000;
+}
+
+class ProjectIblockController extends \Uplab\Api\Controller\IblockController
+{
+    protected function getElementListConfigClass(): string
+    {
+        return ProjectListConfig::class;
+    }
+}
+```
+
+Лимит можно как поднять, так и ужесточить; остальные эндпоинты продолжают работать со штатными значениями — переопределение действует только там, где подключён наследник. Помните, зачем лимиты существуют: `limit` и глубина `filter` напрямую определяют стоимость запроса к БД, а разнообразие параметров — число вариантов кеша.
+
+| Константа | По умолчанию | На что влияет |
+|---|---|---|
+| `MAX_LIMIT` | `500` | `limit` |
+| `MAX_OFFSET` | `100000` | `offset` |
+| `MAX_FILTER_ITEMS` | `1000` | число элементов в `filter` и других массивах условий |
+| `MAX_FILTER_DEPTH` | `5` | глубина вложенности массивов условий |
+| `MAX_SELECT_FIELDS` | `100` | `select`, `propertyCode` |
+| `MAX_ORDER_FIELDS` | `10` | `order` |
+| `MAX_FIELD_NAME_LENGTH` | `128` | длина имени поля в `filter`, `select`, `order`, `propertyCode`, а также длина кода в пути (`{iblockCode}` и т.п.) |
+| `MAX_STRING_VALUE_LENGTH` | `4096` | длина строкового значения в массивах условий |
+| `ORDER_DIRECTIONS` | `ASC`, `DESC`, `ASC,NULLS`, `DESC,NULLS`, `NULLS,ASC`, `NULLS,DESC` | допустимые направления сортировки |
+
+Фабрики класса конфига:
+
+| Фабрика | Контроллер | Эндпоинт |
+|---|---|---|
+| `getIblockConfigClass()` | `IblockController` | `/api/iblock/{code}` |
+| `getElementListConfigClass()` | `IblockController` | `/api/iblock/{code}/elements` |
+| `getElementDetailConfigClass()` | `IblockController` | `/api/iblock/{code}/element/code\|id/{...}` |
+| `getSectionListConfigClass()` | `IblockController` | `/api/iblock/{code}/sections` |
+| `getSectionDetailConfigClass()` | `IblockController` | `/api/iblock/{code}/section/code\|id/{...}` |
+| `getElementFilterConfigClass()` | `IblockController` | `/api/iblock/{code}/filter` |
+| `getIblockPropertiesConfigClass()` | `IblockController` | `/api/iblock/{code}/properties` |
+| `getElementListConfigClass()` | `HlblockController` | `/api/hlblock/{code}/elements` |
+| `getElementFilterConfigClass()` | `HlblockController` | `/api/hlblock/{code}/filter` |
+| `getFieldsConfigClass()` | `HlblockController` | `/api/hlblock/{code}/fields` |
+| `getPageConfigClass()` | `PageController` | `/api/pages/{code}` |
+| `getMenuConfigClass()` | `MenuController` | `/api/menus/{code}` |
+
+Объект конфига создаётся в `BaseController::createConfig()`, так что переопределять экшены не требуется.
+
+У поиска и административных эндпоинтов контента объекта конфига нет — там лимиты меняются переопределением методов модели или контроллера:
+
+| Метод | Класс | Что задаёт |
+|---|---|---|
+| `getMaxLimit()` | `Uplab\Api\Model\Search` | `limit` в `/api/search` |
+| `getMaxOffset()` | `Uplab\Api\Model\Search` | `offset` в `/api/search` |
+| `getMaxPageSize()` | `Uplab\Api\Controller\ContentController` | `pageSize` в `POST /api/content/admin/{pageCode}` |
+| `getMaxOffset()` | `Uplab\Api\Controller\ContentController` | максимальное смещение там же |
+| `getMaxBulkIds()` | `Uplab\Api\Controller\ContentController` | число `ids` в `POST /api/content/bulk` |
+
+Наследник `Search` подключается через `SearchController::getModelClass()`, как остальные модели.
+
+### Тексты ошибок
+
+Сообщения ошибок приходят клиенту из языковых сообщений модуля (`UPLAB_API.ERROR_*`, файлы [lang/ru/include.php](lang/ru/include.php) и [lang/en/include.php](lang/en/include.php)), а не из строк в коде. Язык выбирается штатным механизмом Битрикс, лимиты подставляются в текст через плейсхолдер `#MAX#`:
+
+```json
+{ "type": "about:blank", "title": "Bad Request", "status": 400, "detail": "Параметр limit должен быть от 1 до 500." }
+```
+
+Чтобы изменить формулировку на проекте, переопределите нужное сообщение штатным способом Битрикс — через `/local/php_interface/` или языковые файлы проекта; правка модуля не требуется. Если проект поднял лимит наследованием конфига, в текст подставится лимит наследника.
+
+HTTP-статусы задаются кейсами `Uplab\Api\Enums\HttpStatus`, а не числами: `ApiException` принимает и кейс, и `int` (для обратной совместимости), а наружу отдаёт число.
+
 ### Формат ответа
 
 Сервисные эндпоинты (инфоблоки, highload-блоки, страницы, формы, меню, поиск, карта сайта) возвращают **сырые данные** эндпоинта в теле ответа — **без** обёртки:

@@ -27,7 +27,7 @@ class HlblockController extends BaseController
      */
     public function getElementListAction(string $hlblockCode): Json
     {
-        return $this->getModelClass()->getElementListAction($hlblockCode, HlblockListConfig::create($this->getJsonRequestBody()));
+        return $this->getModelClass()->getElementListAction($hlblockCode, $this->createConfig($this->getElementListConfigClass()));
     }
 
     /**
@@ -37,7 +37,7 @@ class HlblockController extends BaseController
      */
     public function getElementFilterAction(string $hlblockCode): Json
     {
-        return $this->getModelClass()->getFilterElementsAction($hlblockCode, HlblockListConfig::create($this->getJsonRequestBody()));
+        return $this->getModelClass()->getFilterElementsAction($hlblockCode, $this->createConfig($this->getElementFilterConfigClass()));
     }
 
     /**
@@ -47,7 +47,38 @@ class HlblockController extends BaseController
      */
     public function getFieldsAction(string $hlblockCode): Json
     {
-        return $this->getModelClass()->getFiedlsAction($hlblockCode, BaseConfig::create($this->getJsonRequestBody()));
+        return $this->getModelClass()->getFiedlsAction($hlblockCode, $this->createConfig($this->getFieldsConfigClass()));
+    }
+
+    /**
+     * Класс конфига для {@see static::getElementListAction()}.
+     *
+     * Точка расширения: наследник контроллера может вернуть свой конфиг — например с поднятыми
+     * лимитами запроса (см. README, раздел «Переопределение лимитов запросов»).
+     *
+     * @return string Класс-наследник {@see HlblockListConfig}
+     */
+    protected function getElementListConfigClass(): string
+    {
+        return HlblockListConfig::class;
+    }
+
+    /**
+     * Класс конфига для {@see static::getElementFilterAction()}.
+     * @return string Класс-наследник {@see HlblockListConfig}
+     */
+    protected function getElementFilterConfigClass(): string
+    {
+        return HlblockListConfig::class;
+    }
+
+    /**
+     * Класс конфига для {@see static::getFieldsAction()}: у эндпоинта только `siteId`.
+     * @return string Класс-наследник {@see BaseConfig}
+     */
+    protected function getFieldsConfigClass(): string
+    {
+        return BaseConfig::class;
     }
 
     /**

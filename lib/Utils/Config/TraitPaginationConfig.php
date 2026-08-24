@@ -2,6 +2,8 @@
 
 namespace Uplab\Api\Utils\Config;
 
+use Bitrix\Main\Localization\Loc;
+use Uplab\Api\Enums\HttpStatus;
 use Uplab\Api\Exception\ApiException;
 
 trait TraitPaginationConfig
@@ -12,8 +14,11 @@ trait TraitPaginationConfig
 
     public function setLimit(?int $limit): static
     {
-        if ($limit !== null && ($limit < 1 || $limit > BaseConfig::MAX_LIMIT)) {
-            throw new ApiException('limit must be between 1 and ' . BaseConfig::MAX_LIMIT, 400);
+        if ($limit !== null && ($limit < 1 || $limit > static::MAX_LIMIT)) {
+            throw new ApiException(
+                (string)Loc::getMessage('UPLAB_API.ERROR_LIMIT_RANGE', ['#MAX#' => static::MAX_LIMIT]),
+                HttpStatus::BAD_REQUEST
+            );
         }
         $this->limit = $limit;
         return $this;
@@ -21,8 +26,11 @@ trait TraitPaginationConfig
 
     public function setOffset(?int $offset): static
     {
-        if ($offset !== null && ($offset < 0 || $offset > BaseConfig::MAX_OFFSET)) {
-            throw new ApiException('offset must be between 0 and ' . BaseConfig::MAX_OFFSET, 400);
+        if ($offset !== null && ($offset < 0 || $offset > static::MAX_OFFSET)) {
+            throw new ApiException(
+                (string)Loc::getMessage('UPLAB_API.ERROR_OFFSET_RANGE', ['#MAX#' => static::MAX_OFFSET]),
+                HttpStatus::BAD_REQUEST
+            );
         }
         $this->offset = $offset;
         return $this;

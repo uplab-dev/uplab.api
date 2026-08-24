@@ -1,6 +1,42 @@
 # Changelog
 
-## [1.12.0] - 2026-08-21
+## [1.12.1] - 2026-08-25
+
+> **Версия 1.12.0 отозвана — устанавливать её нельзя.** В ней отсутствовал импорт класса, и любой
+> запрос к эндпоинтам инфоблоков и статических страниц завершался ошибкой. Обновляйтесь сразу
+> на 1.12.1; если 1.12.0 уже установлена — замените её, откат к 1.11.0 не нужен.
+
+Поведение API по умолчанию не изменилось: значения лимитов, коды ответов и формат тела прежние.
+
+### Fixed
+
+- `Class "Uplab\Api\Model\Iblock\BaseConfig" not found` на всех эндпоинтах инфоблоков и статических страниц: в [lib/Model/Iblock/IblockService.php](lib/Model/Iblock/IblockService.php) отсутствовал импорт `Uplab\Api\Utils\Config\BaseConfig`, из-за чего вызов `BaseConfig::assertCacheSegment()` в `getIblockByCode()` разрешался в текущий неймспейс. Регрессия 1.12.0.
+- Пустой текст ошибки в админке: `admin/uplab_api_content_page_edit.php` выводил сообщение по ключу `MAIN_MODULE_NOT_INSTALLED`, которого нет ни в модуле, ни в ядре, к тому же до загрузки языкового файла. Заменено на собственный ключ `UPLAB_API_MODULE_NOT_INSTALLED`, загрузка сообщений перенесена выше проверки.
+
+### Added
+
+- **Лимиты запросов переопределяются на проекте.** Проверки обращаются к константам через `static::`, поэтому достаточно унаследовать конфиг и переопределить константу — тела проверок копировать не нужно. Подключение наследника — фабрикой класса конфига в контроллере (`get*ConfigClass()`): `IblockController` (7 фабрик), `HlblockController` (3), `PageController`, `MenuController`. Объект создаётся общим `BaseController::createConfig()`.
+- Переопределяемые лимиты там, где объекта конфига нет: `Search::getMaxLimit()`, `Search::getMaxOffset()` ([lib/Model/Search.php](lib/Model/Search.php)), `ContentController::getMaxPageSize()`, `getMaxOffset()`, `getMaxBulkIds()` ([lib/Controller/ContentController.php](lib/Controller/ContentController.php)).
+- Константы `BaseConfig::MAX_FIELD_NAME_LENGTH` (`128`) и `BaseConfig::MAX_STRING_VALUE_LENGTH` (`4096`) — раньше эти длины были числами внутри проверок и переопределению не поддавались.
+- `HttpStatus::PAYLOAD_TOO_LARGE` (`413`) — статус для превышения размера тела запроса.
+- Разделы «Переопределение лимитов запросов» и «Тексты ошибок» в README и во встроенной документации админки ([lib/Admin/Docs.php](lib/Admin/Docs.php)).
+- Юнит-тесты: переопределение лимитов наследником (включая ужесточение), подмена класса конфига фабрикой контроллера, ключ и подстановка лимита в сообщении об ошибке, статус из `HttpStatus` ([tests/Unit/Security/RequestLimitsTest.php](tests/Unit/Security/RequestLimitsTest.php)) — 105 тестов вместо 92.
+
+### Changed
+
+- **Сообщения ошибок валидации — из языковых сообщений модуля**, а не строками в коде: 22 новых ключа `UPLAB_API.ERROR_*` в [lang/ru/include.php](lang/ru/include.php) и [lang/en/include.php](lang/en/include.php), лимит подставляется через `#MAX#`. Тексты стали локализованными и переопределяются на проекте штатным механизмом Битрикс. Формулировки изменились — если фронтенд сравнивал `detail` с английской строкой (например `limit must be between 1 and 500`), опирайтесь на HTTP-код, а не на текст.
+- **HTTP-статусы задаются кейсами `HttpStatus`**, а не числами: `ApiException` принимает `HttpStatus|int` (числа по-прежнему работают) и отдаёт `int` из `getHttpStatus()` ([lib/Exception/ApiException.php](lib/Exception/ApiException.php)).
+- Проверки лимитов используют `static::` вместо `self::`/`BaseConfig::` — в [lib/Utils/Config/BaseConfig.php](lib/Utils/Config/BaseConfig.php) и трейтах конфигов.
+- `BaseConfig::assertArrayComplexity()`: значения по умолчанию параметров `$maxItems` и `$maxDepth` заменены на `null` (язык запрещает `static::` в значении по умолчанию), лимиты разрешаются в теле метода. Вызовы без аргументов и с явными числами работают как раньше.
+- PHPDoc: описаны `BaseConfig` (класс, все константы, свойства и методы с `@throws`), `HttpStatus` (класс и каждый кейс — где применяется) и `ApiException`.
+
+## [1.12.0] - 2026-08-21 — ОТОЗВАНА, НЕ УСТАНАВЛИВАТЬ
+
+> **Релиз неработоспособен.** В `lib/Model/Iblock/IblockService.php` не был импортирован класс
+> `Uplab\Api\Utils\Config\BaseConfig`, поэтому `getIblockByCode()` падал с
+> `Class "Uplab\Api\Model\Iblock\BaseConfig" not found`. Затронуты все эндпоинты `/api/iblock/*`
+> и `/api/pages/*` — то есть основная часть API. Исправлено в 1.12.1, в остальном содержимое
+> релиза не менялось: описание изменений ниже относится и к 1.12.1.
 
 Подготовка модуля к публикации: проверка прав HL-блоков, разделение кеша по правам, ограничения на входные данные, штатная защита административных операций.
 

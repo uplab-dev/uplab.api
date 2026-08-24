@@ -12,8 +12,10 @@ use Bitrix\Main\Localization\Loc;
 use Bitrix\Main\Result;
 use Uplab\Api\ActionFilter\ApiAccessFilter;
 use Uplab\Api\Enums\EventLogType;
+use Uplab\Api\Enums\HttpStatus;
 use Uplab\Api\Exception\ApiException;
 use Uplab\Api\Main;
+use Uplab\Api\Utils\Config\BaseConfig;
 
 abstract class BaseController extends Controller
 {
@@ -224,6 +226,22 @@ abstract class BaseController extends Controller
 		return $result->getData();
 	}
 
+	/**
+	 * Создать объект конфига запроса из JSON body.
+	 *
+	 * Класс конфига берётся не напрямую, а из фабрики контроллера (`get*ConfigClass()`), чтобы
+	 * проект мог подставить своего наследника — например с другими лимитами запроса
+	 * ({@see BaseConfig}) — не копируя тело экшена.
+	 *
+	 * @param string $configClass Класс-наследник {@see BaseConfig}
+	 * @return BaseConfig
+	 * @throws ApiException При некорректном теле запроса или недопустимых параметрах
+	 */
+	protected function createConfig(string $configClass): BaseConfig
+	{
+		return $configClass::create($this->getJsonRequestBody());
+	}
+
 	protected function getJsonRequestBody()
 	{
 		$rawBody = HttpRequest::getInput();
@@ -231,7 +249,13 @@ abstract class BaseController extends Controller
 			return null;
 		}
 		if (strlen($rawBody) > self::MAX_JSON_BODY_BYTES) {
-			throw new ApiException('Request body is too large', 413);
+			throw new ApiException(
+				(string)Loc::getMessage(
+					'UPLAB_API.ERROR_BODY_TOO_LARGE',
+					['#MAX#' => static::MAX_JSON_BODY_BYTES]
+				),
+				HttpStatus::PAYLOAD_TOO_LARGE
+			);
 		}
 
 		return static::decodeRequestBody($rawBody, $this->getRequestContentType());
@@ -263,7 +287,10 @@ abstract class BaseController extends Controller
 			$body = json_decode($rawBody, true, self::MAX_JSON_BODY_DEPTH, JSON_THROW_ON_ERROR);
 		} catch (\JsonException) {
 			if ($declaresJson) {
-				throw new ApiException('Invalid JSON body', 400);
+				throw new ApiException(
+					(string)Loc::getMessage('UPLAB_API.ERROR_INVALID_JSON'),
+					HttpStatus::BAD_REQUEST
+				);
 			}
 
 			return null;
@@ -271,7 +298,10 @@ abstract class BaseController extends Controller
 
 		if (!is_array($body)) {
 			if ($declaresJson) {
-				throw new ApiException('JSON body must be an object', 400);
+				throw new ApiException(
+					(string)Loc::getMessage('UPLAB_API.ERROR_JSON_NOT_OBJECT'),
+					HttpStatus::BAD_REQUEST
+				);
 			}
 
 			return null;

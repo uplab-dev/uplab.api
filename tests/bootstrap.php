@@ -152,9 +152,22 @@ namespace Bitrix\Main\Localization {
     if (!class_exists(Loc::class, false)) {
         class Loc
         {
+            /**
+             * Возвращает сам ключ: тексты сообщений лежат в lang-файлах и в юнит-тестах не нужны.
+             * Плейсхолдеры подставляются как в ядре — так тест видит опечатку в имени плейсхолдера.
+             */
             public static function getMessage(string $code, ?array $replace = null, ?string $language = null): ?string
             {
-                return $code;
+                if (!$replace) {
+                    return $code;
+                }
+
+                return str_replace(array_keys($replace), array_values($replace), $code)
+                    . ' [' . implode(', ', array_map(
+                        static fn($k, $v): string => $k . '=' . $v,
+                        array_keys($replace),
+                        array_values($replace)
+                    )) . ']';
             }
         }
     }

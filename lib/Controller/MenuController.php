@@ -18,7 +18,20 @@ class MenuController extends BaseController
      */
     public function getAction(string $menuCode): \Bitrix\Main\Engine\Response\Json
     {
-        return $this->getModelClass()->getMenu($menuCode, MenuConfig::create($this->getJsonRequestBody()));
+        return $this->getModelClass()->getMenu($menuCode, $this->createConfig($this->getMenuConfigClass()));
+    }
+
+    /**
+     * Класс конфига для {@see static::getAction()}.
+     *
+     * Точка расширения: наследник контроллера может вернуть свой конфиг — например с поднятыми
+     * лимитами запроса (см. README, раздел «Переопределение лимитов запросов»).
+     *
+     * @return string Класс-наследник {@see MenuConfig}
+     */
+    protected function getMenuConfigClass(): string
+    {
+        return MenuConfig::class;
     }
 
     /**

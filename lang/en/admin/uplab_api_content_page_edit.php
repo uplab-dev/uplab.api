@@ -1,4 +1,5 @@
 <?php
+$MESS['UPLAB_API_MODULE_NOT_INSTALLED'] = 'The uplab.api module is not installed.';
 $MESS['CONTENT_PAGE_EDIT_HLBLOCK_NOT_FOUND'] = 'HlBlock not found.';
 $MESS['CONTENT_PAGE_EDIT_TITLE_CREATE']      = 'Create new record';
 $MESS['CONTENT_PAGE_EDIT_TITLE_UPDATE']      = 'Edit element #ID#';

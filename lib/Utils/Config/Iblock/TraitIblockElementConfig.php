@@ -2,8 +2,9 @@
 
 namespace Uplab\Api\Utils\Config\Iblock;
 
+use Bitrix\Main\Localization\Loc;
+use Uplab\Api\Enums\HttpStatus;
 use Uplab\Api\Exception\ApiException;
-use Uplab\Api\Utils\Config\BaseConfig;
 
 trait TraitIblockElementConfig
 {
@@ -29,12 +30,21 @@ trait TraitIblockElementConfig
     public function setPropertyCode(?array $propertyCode): static
     {
         if ($propertyCode !== null) {
-            if (count($propertyCode) > BaseConfig::MAX_SELECT_FIELDS) {
-                throw new ApiException('propertyCode contains too many fields', 400);
+            if (count($propertyCode) > static::MAX_SELECT_FIELDS) {
+                throw new ApiException(
+                    (string)Loc::getMessage(
+                        'UPLAB_API.ERROR_PROPERTY_CODE_TOO_MANY',
+                        ['#MAX#' => static::MAX_SELECT_FIELDS]
+                    ),
+                    HttpStatus::BAD_REQUEST
+                );
             }
             foreach ($propertyCode as $code) {
-                if (!is_string($code) || $code === '' || strlen($code) > 128) {
-                    throw new ApiException('propertyCode contains an invalid field', 400);
+                if (!is_string($code) || $code === '' || strlen($code) > static::MAX_FIELD_NAME_LENGTH) {
+                    throw new ApiException(
+                        (string)Loc::getMessage('UPLAB_API.ERROR_PROPERTY_CODE_INVALID'),
+                        HttpStatus::BAD_REQUEST
+                    );
                 }
             }
         }
@@ -115,7 +125,7 @@ trait TraitIblockElementConfig
     public function setPropertiesProperty(?array $getPropertiesProperty): static
     {
         if ($getPropertiesProperty !== null) {
-            BaseConfig::assertArrayComplexity($getPropertiesProperty);
+            static::assertArrayComplexity($getPropertiesProperty);
         }
         $this->getPropertiesProperty = $getPropertiesProperty;
         return $this;

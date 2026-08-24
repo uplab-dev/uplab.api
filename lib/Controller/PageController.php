@@ -15,8 +15,21 @@ class PageController extends BaseController
      */
     public function getPageAction(string $code): Json
     {
-        return $this->getModelClass()->getPageAction($code, IblockDetailElementConfig::create($this->getJsonRequestBody()));
+        return $this->getModelClass()->getPageAction($code, $this->createConfig($this->getPageConfigClass()));
     }
+    /**
+     * Класс конфига для {@see static::getPageAction()}.
+     *
+     * Точка расширения: наследник контроллера может вернуть свой конфиг — например с поднятыми
+     * лимитами запроса (см. README, раздел «Переопределение лимитов запросов»).
+     *
+     * @return string Класс-наследник {@see IblockDetailElementConfig}
+     */
+    protected function getPageConfigClass(): string
+    {
+        return IblockDetailElementConfig::class;
+    }
+
     /**
      * Модель для получения данных
      * @return PageService

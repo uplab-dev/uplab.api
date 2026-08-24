@@ -14,11 +14,11 @@ define("ADMIN_MODULE_NAME", "uplab.api");
 
 require_once $_SERVER['DOCUMENT_ROOT'] . '/bitrix/modules/main/include/prolog_admin_before.php';
 
-if (!Loader::includeModule(ADMIN_MODULE_NAME)) {
-	ShowError(Loc::getMessage("MAIN_MODULE_NOT_INSTALLED"));
-}
-
 IncludeModuleLangFile(__FILE__);
+
+if (!Loader::includeModule(ADMIN_MODULE_NAME)) {
+	ShowError(Loc::getMessage("UPLAB_API_MODULE_NOT_INSTALLED"));
+}
 
 // Проверка прав доступа
 $POST_RIGHT = $APPLICATION->GetGroupRight(ADMIN_MODULE_NAME);
