@@ -5,7 +5,6 @@ namespace Uplab\Api\Controller;
 use Bitrix\Main\Application;
 use Bitrix\Main\Engine\Action;
 use Bitrix\Main\Engine\Controller;
-use Bitrix\Main\Error;
 use Bitrix\Main\HttpRequest;
 use Bitrix\Main\HttpResponse;
 use Bitrix\Main\Localization\Loc;
@@ -57,33 +56,53 @@ abstract class BaseController extends Controller
 	}
 
 	/**
-	 * Fallback для исключений ВНЕ тела экшена (фильтры, привязка параметров): без утечки.
-	 * Такой ответ идёт стандартным путём Bitrix (конверт, HTTP 200) — редкий крайний случай.
+	 * Страховка для исключений, не дошедших до {@see getActionResponse()}.
+	 *
+	 * На ядре без этого хука (старый main вызывает runWithSourceParametersList() прямо из run())
+	 * сюда попадают ВСЕ исключения экшена, на новом — только исключения фильтров и привязки
+	 * параметров. Ответ в обоих случаях тот же, что из getActionResponse(): ApiException —
+	 * свой 4xx без записи в журнал, остальное — HTTP 500 + запись в Журнал событий.
+	 *
+	 * run() ядра после исключения возвращает null и собирает стандартный конверт (HTTP 200),
+	 * поэтому ответ отправляется напрямую и запрос завершается.
 	 *
 	 * @param \Exception $e
 	 * @return void
 	 */
 	protected function runProcessingException(\Exception $e)
 	{
-		$this->logInternalThrowable($e);
-		$this->addError(new Error(Loc::getMessage('UPLAB_API.INTERNAL_ERROR'), EventLogType::INTERNAL_ERROR->value));
+		$this->endWithResponse(
+			$e instanceof ApiException ? $this->renderApiException($e) : $this->renderInternalError($e)
+		);
 	}
 
 	/**
-	 * То же для PHP-ошибок (\Error, в т.ч. TypeError) вне тела экшена.
+	 * То же для PHP-ошибок (\Error, в т.ч. TypeError).
 	 *
 	 * @param \Error $error
 	 * @return void
 	 */
 	protected function runProcessingError(\Error $error)
 	{
-		$this->logInternalThrowable($error);
-		$this->addError(new Error(Loc::getMessage('UPLAB_API.INTERNAL_ERROR'), EventLogType::INTERNAL_ERROR->value));
+		$this->endWithResponse($this->renderInternalError($error));
+	}
+
+	/**
+	 * Отправляет ответ и завершает запрос — так же ядро отдаёт ответ контроллера
+	 * в HttpApplication::runController(). finally-блоки run() при этом не выполняются.
+	 *
+	 * @param HttpResponse $response
+	 * @return void
+	 */
+	private function endWithResponse(HttpResponse $response): void
+	{
+		Application::getInstance()->end(0, $response);
 	}
 
 	/**
 	 * Ответ на намеренную клиентскую ошибку (RFC 9457): статус и сообщение — из исключения.
-	 * Не логируется как внутренняя ошибка (это ожидаемая ситуация, а не баг).
+	 * Не логируется как внутренняя ошибка (это ожидаемая ситуация, а не баг) — иначе любой клиент
+	 * кривым телом запроса забивал бы Журнал событий и уведомления администратора.
 	 *
 	 * @param ApiException $e
 	 * @return HttpResponse

@@ -808,7 +808,10 @@ class Docs
                     'text' => '<b>Внутренние ошибки.</b> Любое необработанное исключение/ошибка → <code>HTTP 500</code> и тело '
                         . 'RFC 9457 — <b>без</b> раскрытия классов, сигнатур и трейса. Полные детали пишутся в Журнал событий '
                         . '(тип <code>UPLAB_API_INTERNAL_ERROR</code>), администратору показывается уведомление со ссылкой на '
-                        . 'журнал (перехват в <code>BaseController::getActionResponse()</code>). '
+                        . 'журнал (перехват в <code>BaseController::getActionResponse()</code>; страховка '
+                        . '<code>runProcessingException</code>/<code>runProcessingError</code> отдаёт тот же ответ для '
+                        . 'исключений, не дошедших до него, в том числе на ядре без этого хука). В журнал попадают только '
+                        . 'внутренние ошибки — <code>ApiException</code> (<code>4xx</code>) не логируется. '
                         . '<b>nginx:</b> при <code>fastcgi_intercept_errors on</code> тело <code>5xx</code> подменяется '
                         . 'HTML-страницей nginx — чтобы <code>problem+json</code> доходил на 500, отключите перехват для '
                         . '<code>/api/</code> (см. README). Ответы <code>4xx</code> проходят всегда.',
