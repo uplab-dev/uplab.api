@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.12.4] - 2026-10-16
+
+### Fixed
+
+- `/api/search`: при `offset` за пределами выдачи (результаты есть, страница пустая) ответ был пустым массивом `[]` без `meta`. Теперь приходит `meta` с `total`, `limit`, `offset`; `items`, как и в остальных списках, есть только при непустой выборке ([lib/Model/Search.php](lib/Model/Search.php)).
+- Коллекция Postman: четыре тест-скрипта (элемент по коду, раздел по коду, данные фильтра, страница по коду) объявляли `const data`, а `data` — глобал песочницы Postman, поэтому скрипты падали с `SyntaxError` и проверки не выполнялись. Переменная переименована; комментарии к административным запросам уточнены: без авторизации новое ядро отдаёт `401` ([tests/uplab.api.postman_collection.json](tests/uplab.api.postman_collection.json)).
+
+### Changed
+
+- Документация: зафиксировано соглашение с фронтом — в списках (`/elements`, `/sections`, `/hlblock/{code}/elements`, `/api/search`) ключ `items` есть только при непустой выборке, при нуле элементов ответ содержит только `meta`. Код не менялся ([README.md](README.md), [lib/Admin/Docs.php](lib/Admin/Docs.php)).
+- Документация: пустой статический контент (`CONTENT` в `/api/pages/{code}` и ответ `/api/content/page/{pageCode}`) описан как пустой массив `[]` — так кодируется пустой PHP-массив, и так же модуль отдаёт `PROPERTIES` и другие пустые словари. Код не менялся ([README.md](README.md), [lib/Admin/Docs.php](lib/Admin/Docs.php)).
+
 ## [1.12.3] - 2026-10-16
 
 ### Fixed

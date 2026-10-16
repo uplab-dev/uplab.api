@@ -174,12 +174,9 @@ class Search extends BaseAction
                 }
             }
             if ($countItems > 0) {
+                $data['meta'] = ['limit' => $limit, 'offset' => $offset, 'total' => $countItems];
                 //пагинация не ушла за пределы
                 if (($page - 1) * $limit < $countItems) {
-                    $data['meta']['limit'] = $limit;
-                    $data['meta']['offset'] = $offset;
-                    $data['meta']['total'] = $countItems;
-
                     // Статические страницы из соответствующего ИБ
                     $this->staticPages = $this->getStaticPages();
 

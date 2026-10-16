@@ -628,7 +628,8 @@ class Docs
             $rows[] = [
                 'label' => 'Пагинация',
                 'value' => '<code>limit=10</code>, <code>offset=0</code> — если не переданы; максимум '
-                    . '<code>limit=500</code>, <code>offset=100000</code>.',
+                    . '<code>limit=500</code>, <code>offset=100000</code>. '
+                    . '<code>items</code> есть только при непустой выборке; при нуле элементов — только <code>meta</code> (<code>total: 0</code>).',
             ];
         }
 
@@ -1388,7 +1389,8 @@ class Docs
                         [
                             'label' => 'Пагинация',
                             'value' => '<code>limit=10</code>, <code>offset=0</code>. В ответе — <code>meta.limit</code>/<code>meta.offset</code>, '
-                                . '<code>meta.total</code> при <code>SHOW_TOTAL=Y</code>. Максимумы: <code>500</code>/<code>100000</code>.',
+                                . '<code>meta.total</code> при <code>SHOW_TOTAL=Y</code>. Максимумы: <code>500</code>/<code>100000</code>. '
+                                . '<code>items</code> есть только при непустой выборке; при нуле записей — только <code>meta</code>.',
                         ],
                     ],
                     'notes' => [
@@ -1451,7 +1453,7 @@ class Docs
                         . 'найденного элемента, <code>UF_ACTIVE = true</code> и <code>UF_LANG = siteId</code> (условие по языку '
                         . 'добавляется, только если <code>siteId</code> передан). Структура — '
                         . '<code>CONTENT[UF_BLOCK][UF_CODE] = UF_VALUE</code>, значение <code>#YEAR#</code> заменяется '
-                        . 'на текущий год. Если записей нет — пустой объект.',
+                        . 'на текущий год. Если записей нет — пустой массив <code>[]</code>.',
                         '<b>Хлебные крошки.</b> <code>PageService</code> цепочку навигации не строит — ключа '
                         . '<code>BREADCRUMBS</code> верхнего уровня в ответе нет (в отличие от детальных эндпоинтов '
                         . 'инфоблока). Если <code>BREADCRUMBS</code> встречается в <code>PROPERTIES</code>, это обычное '
@@ -1677,6 +1679,8 @@ class Docs
                         ],
                     ],
                     'notes' => [
+                        'Если результаты есть, но <code>offset</code> за пределами выдачи — ответ содержит только <code>meta</code> '
+                        . '(<code>total</code>, <code>limit</code>, <code>offset</code>) без <code>items</code>.',
                         'При пустом результате с морфологией выполняется повторный поиск без стемминга.',
                         'Текст «ничего не найдено» (<code>message.title</code>/<code>message.text</code>) берётся из статического '
                         . 'контента — HLBlock <code>Content</code>: <code>UF_PAGE=\'search\'</code>, <code>UF_BLOCK=\'empty\'</code>, '

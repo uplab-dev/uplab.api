@@ -143,7 +143,8 @@
           },
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
             "pm.test('Статус 200', () => pm.expect(pm.response.code).to.eql(200));",
-            "pm.test('Тело — items, а не ошибка лимита', () => pm.expect(pm.response.json()).to.have.property('items'));"
+            "// items по соглашению есть только при непустой выборке; признак успеха — meta",
+            "pm.test('Тело — meta (выборка выполнена), а не ошибка лимита', () => pm.expect(pm.response.json()).to.have.property('meta'));"
           ] } }]
         },
         {
@@ -196,15 +197,15 @@
           },
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
             "pm.test('Статус 200 (переменная должна указывать на существующую запись)', () => pm.expect(pm.response.code).to.eql(200));",
-            "const data = pm.response.json();",
+            "const json = pm.response.json();",
             "pm.test('BREADCRUMBS — непустой массив звеньев с TEXT', () => {",
-            "  pm.expect(data.BREADCRUMBS).to.be.an('array').that.is.not.empty;",
-            "  data.BREADCRUMBS.forEach(link => pm.expect(link).to.have.property('TEXT'));",
+            "  pm.expect(json.BREADCRUMBS).to.be.an('array').that.is.not.empty;",
+            "  json.BREADCRUMBS.forEach(link => pm.expect(link).to.have.property('TEXT'));",
             "});",
             "pm.test('Последнее звено BREADCRUMBS — сам элемент, без HREF', () => {",
-            "  pm.expect(data.BREADCRUMBS[data.BREADCRUMBS.length - 1]).to.not.have.property('HREF');",
+            "  pm.expect(json.BREADCRUMBS[json.BREADCRUMBS.length - 1]).to.not.have.property('HREF');",
             "});",
-            "pm.test('В ответе есть SECTION_URL', () => pm.expect(data).to.have.property('SECTION_URL'));"
+            "pm.test('В ответе есть SECTION_URL', () => pm.expect(json).to.have.property('SECTION_URL'));"
           ] } }]
         },
         {
@@ -268,16 +269,16 @@
           },
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
             "pm.test('Статус 200 (переменная должна указывать на существующий раздел)', () => pm.expect(pm.response.code).to.eql(200));",
-            "const data = pm.response.json();",
+            "const json = pm.response.json();",
             "pm.test('BREADCRUMBS — непустой массив звеньев с TEXT и HREF', () => {",
-            "  pm.expect(data.BREADCRUMBS).to.be.an('array').that.is.not.empty;",
-            "  data.BREADCRUMBS.forEach(link => {",
+            "  pm.expect(json.BREADCRUMBS).to.be.an('array').that.is.not.empty;",
+            "  json.BREADCRUMBS.forEach(link => {",
             "    pm.expect(link).to.have.property('TEXT');",
             "    pm.expect(link).to.have.property('HREF');",
             "  });",
             "});",
             "pm.test('Звено текущего раздела — с пустым HREF', () => {",
-            "  pm.expect(data.BREADCRUMBS[data.BREADCRUMBS.length - 1].HREF).to.eql('');",
+            "  pm.expect(json.BREADCRUMBS[json.BREADCRUMBS.length - 1].HREF).to.eql('');",
             "});"
           ] } }]
         },
@@ -305,9 +306,9 @@
             "pm.test('Статус 200', () => pm.expect(pm.response.code).to.eql(200));",
             "const body = pm.response.json();",
             "pm.test('Ответ — массив свойств', () => pm.expect(body).to.be.an('array'));",
-            "const data = Array.isArray(body) ? body : [];",
+            "const json = Array.isArray(body) ? body : [];",
             "pm.test('У каждого свойства есть code, propertyType и непустой items', () => {",
-            "  data.forEach(prop => {",
+            "  json.forEach(prop => {",
             "    pm.expect(prop).to.have.property('code');",
             "    pm.expect(prop).to.have.property('propertyType');",
             "    pm.expect(prop.items, 'items свойства ' + prop.code).to.be.an('array').that.is.not.empty;",
@@ -317,14 +318,14 @@
             "    });",
             "  });",
             "});",
-            "const listProps = data.filter(prop => prop.propertyType === 'L');",
+            "const listProps = json.filter(prop => prop.propertyType === 'L');",
             "(listProps.length ? pm.test : pm.test.skip)('Свойства типа «Список» (L) отдают значения: value — ID перечисления', () => {",
             "  listProps.forEach(prop => {",
             "    prop.items.forEach(item => pm.expect(Number(item.value), 'value значения свойства ' + prop.code).to.be.a('number').and.not.NaN);",
             "  });",
             "});",
             "const baseline = {};",
-            "data.forEach(prop => { baseline[prop.code] = { propertyType: prop.propertyType, count: (prop.items || []).length, sampleValue: (prop.items || []).length ? prop.items[0].value : null }; });",
+            "json.forEach(prop => { baseline[prop.code] = { propertyType: prop.propertyType, count: (prop.items || []).length, sampleValue: (prop.items || []).length ? prop.items[0].value : null }; });",
             "pm.collectionVariables.set('filterBaseline', JSON.stringify(baseline));"
           ] } }]
         },
@@ -459,13 +460,14 @@
           },
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
             "pm.test('Статус 200 (переменная должна указывать на существующую запись)', () => pm.expect(pm.response.code).to.eql(200));",
-            "const data = pm.response.json();",
-            "pm.test('В ответе есть CONTENT — статический контент страницы', () => pm.expect(data).to.have.property('CONTENT'));",
+            "const json = pm.response.json();",
+            "pm.test('В ответе есть CONTENT — статический контент страницы', () => pm.expect(json).to.have.property('CONTENT'));",
             "pm.test('CONTENT — объект блоков вида CONTENT[UF_BLOCK][UF_CODE]', () => {",
-            "  pm.expect(data.CONTENT).to.be.an('object');",
-            "  Object.values(data.CONTENT).forEach(block => pm.expect(block).to.be.an('object'));",
+            "  // пустой контент — [] (пустой PHP-массив), непустой — объект блоков",
+            "  pm.expect(Array.isArray(json.CONTENT) ? 'array' : typeof json.CONTENT).to.be.oneOf(['array', 'object']);",
+            "  Object.values(json.CONTENT).forEach(block => pm.expect(block).to.be.an('object'));",
             "});",
-            "pm.collectionVariables.set('pageContent', JSON.stringify(data.CONTENT || {}));"
+            "pm.collectionVariables.set('pageContent', JSON.stringify(json.CONTENT || {}));"
           ] } }]
         },
         {
@@ -604,7 +606,7 @@
             "url": { "raw": "{{baseUrl}}/api/content/admin/{{contentPageCode}}", "host": ["{{baseUrl}}"], "path": ["api", "content", "admin", "{{contentPageCode}}"] }
           },
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "// Требует авторизацию + право hl_element_read. Без них — HTTP 200 + {status:error} «Доступ запрещён».",
+            "// Требует авторизацию + право hl_element_read. Без них — 401 (на старом ядре HTTP 200 + {status:error}) «Доступ запрещён».",
             "var j = pm.response.json();",
             "pm.test('Статус 200', () => pm.expect(pm.response.code).to.eql(200));",
             "pm.test('Ответ без ошибки доступа (нужна авторизация + права)', function () {",
