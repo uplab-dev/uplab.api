@@ -511,7 +511,17 @@
             "url": { "raw": "{{baseUrl}}/api/forms/{{formCode}}/fields", "host": ["{{baseUrl}}"], "path": ["api", "forms", "{{formCode}}", "fields"] }
           },
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('Статус 200', () => pm.expect(pm.response.code).to.eql(200));"
+            "pm.test('Статус 200', () => pm.expect(pm.response.code).to.eql(200));",
+            "// Для checkbox/radio/dropdown/multiselect ядро читает значение по SID вопроса, а не по ID ответа (CForm::Check).",
+            "var sidTypes = ['checkbox', 'radio', 'dropdown', 'multiselect', 'select'];",
+            "function checkName(f) {",
+            "    if (!f || !f.name || sidTypes.indexOf(f.type) === -1) { return; }",
+            "    pm.expect(f.name, f.type + ' ' + f.code).to.not.match(/^form_[a-z]+_\\d+(\\[\\])?$/);",
+            "}",
+            "pm.test('name у checkbox/radio/dropdown/multiselect — по SID вопроса, не по ID ответа', function () {",
+            "    var j = pm.response.json();",
+            "    (j.fields || []).forEach(function (f) { checkName(f); (f.fields || []).forEach(checkName); });",
+            "});"
           ] } }]
         },
         {
@@ -535,7 +545,17 @@
             "url": { "raw": "{{baseUrl}}/api/forms/{{formCode}}", "host": ["{{baseUrl}}"], "path": ["api", "forms", "{{formCode}}"] }
           },
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('Статус 200', () => pm.expect(pm.response.code).to.eql(200));"
+            "pm.test('Статус 200', () => pm.expect(pm.response.code).to.eql(200));",
+            "// Для checkbox/radio/dropdown/multiselect ядро читает значение по SID вопроса, а не по ID ответа (CForm::Check).",
+            "var sidTypes = ['checkbox', 'radio', 'dropdown', 'multiselect', 'select'];",
+            "function checkName(f) {",
+            "    if (!f || !f.name || sidTypes.indexOf(f.type) === -1) { return; }",
+            "    pm.expect(f.name, f.type + ' ' + f.code).to.not.match(/^form_[a-z]+_\\d+(\\[\\])?$/);",
+            "}",
+            "pm.test('name у checkbox/radio/dropdown/multiselect — по SID вопроса, не по ID ответа', function () {",
+            "    var j = pm.response.json();",
+            "    (j.items || []).forEach(function (f) { checkName(f); });",
+            "});"
           ] } }]
         },
         {

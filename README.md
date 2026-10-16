@@ -1147,6 +1147,16 @@ HL-блок отдаётся публично, пока на нём **ником
 
 Поля формы передаются в теле запроса и соответствуют полям Bitrix-формы. Перед сохранением вызывается событие `uplab.api::OnBeforeCheckForm`.
 
+Имена полей берите из `name` в ответе `/api/forms/{code}` или `/api/forms/{code}/fields` — они построены так, как их читает ядро (`CForm::Check()`):
+
+| Тип вопроса | Имя поля | Значение |
+|---|---|---|
+| `text`, `textarea`, `email`, `password`, `hidden`, `date`, `url`, `file`, `image` | `form_{тип}_{ID ответа}` | введённое значение |
+| `radio`, `dropdown` | `form_{тип}_{SID вопроса}` | ID выбранного ответа |
+| `checkbox`, `multiselect` | `form_{тип}_{SID вопроса}[]` | массив ID выбранных ответов |
+
+Галочка согласия — вопрос `checkbox` с одним ответом: отправляется как `form_checkbox_AGREEMENT[]=<ID ответа>`, а не `form_checkbox_<ID ответа>[]`.
+
 ---
 
 ### ANY `/api/forms/{code}`

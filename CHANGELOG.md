@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.12.3] - 2026-10-16
+
+### Fixed
+
+- Неверный `name` у полей `checkbox`, `radio`, `dropdown`, `multiselect` с одним вариантом ответа в `ANY /api/forms/{code}`: отдавался `form_checkbox_<ID ответа>[]`, тогда как `CForm::Check()` и `CFormResult::Add()` читают эти типы по SID вопроса (`form_checkbox_<SID>[]`, ID ответа — значением). Типичный случай — обязательная галочка согласия: отправка под именем из ответа давала «Не заполнены следующие обязательные поля», у необязательного вопроса значение молча терялось. Теперь имя строится по SID; для `text`, `email`, `textarea`, `hidden`, `file` и прочих типов имя по ID ответа не изменилось ([lib/Model/WebForm/WebFormService.php](lib/Model/WebForm/WebFormService.php)).
+- То же в `GET /api/forms/{code}/fields`: `multiselect` в `fields[].name` именовался по ID ответа, а `name` вопроса с одним ответом — по ID ответа для всех типов. Теперь оба соответствуют ядру, для `checkbox` и `multiselect` в `name` вопроса добавлен `[]`.
+
+> **Фронту.** Если имя поля согласия было зашито на фронте как `form_checkbox_<SID>[]`, можно вернуться к `name` из ответа API.
+
 ## [1.12.2] - 2026-10-12
 
 ### Fixed

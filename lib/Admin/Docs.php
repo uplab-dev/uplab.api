@@ -1494,7 +1494,8 @@ class Docs
                     'meta' => ['Контроллер' => 'WebFormController::addNewResultAction', 'Конфиг' => 'BaseConfig + $_REQUEST'],
                     'notes' => [
                         'Набор полей зависит от конкретной веб-формы. Получить структуру можно через <code>GET /api/forms/{code}/fields</code> '
-                        . 'или <code>ANY /api/forms/{code}</code>. Имена полей соответствуют <code>SID</code>/кодам вопросов формы.',
+                        . 'или <code>ANY /api/forms/{code}</code>; имена берите из <code>name</code> в ответе — они построены так, как их читает ядро.',
+                        'Типы <code>text</code>, <code>textarea</code>, <code>email</code>, <code>hidden</code>, <code>file</code> и т.п. — <code>form_{тип}_{ID ответа}</code>; <code>radio</code>, <code>dropdown</code> — <code>form_{тип}_{SID вопроса}</code> со значением-ID ответа; <code>checkbox</code>, <code>multiselect</code> — <code>form_{тип}_{SID вопроса}[]</code> с массивом ID ответов. Галочка согласия: <code>form_checkbox_AGREEMENT[]=&lt;ID ответа&gt;</code>.',
                     ],
                     'example' => "{\n  \"siteId\": \"ru\",\n  \"form_text_42\": \"Иван\",\n  \"form_email_43\": \"ivan@example.com\"\n}",
                     'responses' => [

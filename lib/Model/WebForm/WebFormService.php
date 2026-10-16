@@ -18,6 +18,12 @@ use Uplab\Api\Utils\Config\BaseConfig;
 class WebFormService
 {
     /**
+     * Типы вопросов, значения которых ядро (CForm::Check, CFormResult::Add) читает по SID вопроса:
+     * form_{тип}_{SID}, а ID ответа передаётся значением. Остальные типы читаются по ID ответа.
+     */
+    protected const SID_NAMED_FIELD_TYPES = ['checkbox', 'multiselect', 'radio', 'dropdown'];
+
+    /**
      * Метод end-point для получения данных web-формы в формате для FRONT.
      * @param string $webFormCode
      * @param BaseConfig $iblockConfig
@@ -506,7 +512,9 @@ class WebFormService
                     if (count($answers) === 1) {
                         $answer = $answers[0] ?? [];
 
-                        $field['name'] = "form_{$field['type']}_{$answer['ID']}";
+                        if (!in_array($field['type'], static::SID_NAMED_FIELD_TYPES, true)) {
+                            $field['name'] = "form_{$field['type']}_{$answer['ID']}";
+                        }
 
                         $message = trim($answer['MESSAGE']);
                         if (strlen($message) > 0) {
@@ -628,7 +636,12 @@ class WebFormService
 
                         $answer = $answers[0];
 
-                        $field['name'] = "form_{$field['type']}_{$answer['ID']}";
+                        $field['name'] = in_array($field['type'], static::SID_NAMED_FIELD_TYPES, true)
+                            ? "form_{$field['type']}_{$arQuestion['SID']}"
+                            : "form_{$field['type']}_{$answer['ID']}";
+                        if (in_array($field['type'], ['multiselect', 'checkbox'], true)) {
+                            $field['name'] .= '[]';
+                        }
 
                         $message = trim($answer['MESSAGE']);
                         if (strlen($message) > 0) {
@@ -700,7 +713,7 @@ class WebFormService
                         if ($param = $answer['FIELD_PARAM']) {
                             $singleField['attr'] = $param;
                         }
-                        if (in_array($answer['FIELD_TYPE'], ['checkbox', 'dropdown', 'radio'])) {
+                        if (in_array($answer['FIELD_TYPE'], static::SID_NAMED_FIELD_TYPES, true)) {
                             $singleField['name'] .= $arQuestion['SID'];
                         } else {
                             $singleField['name'] .= $answer['ID'];
